@@ -18,7 +18,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@500;600&display=swap">
 
 <style>
-  *, *::before, *::after { box-sizing: border-box; }
   html, body { margin: 0; }
   html { height: 100%; }
   img { max-width: 100%; }
@@ -84,6 +83,8 @@
     --err:        #e08a6a;
     --hit:        #4a3312;
   }
+
+  *, *::before, *::after { box-sizing: border-box; }
 
   html { background: var(--bg-page); }
 
@@ -225,9 +226,11 @@
 
   .out { margin-top: 5px; }
 
-  /* Tables, ASCII and tag rows use the full width; running prose stops at a
-     readable measure, the way a program wraps its own output. */
-  ul.bul li, .entry > p, .out > p, h2.head + .meta { max-width: 92ch; }
+  /* Text wraps to the window, because the window is resizable — the reader
+     sets the measure by sizing it, exactly as they would a real terminal.
+     Long unbreakable tokens (model names, URLs) break rather than overflow. */
+  .screen, .screen * { overflow-wrap: anywhere; }
+  pre, .fetch pre, pre.tl { overflow-wrap: normal; }
 
   /* key : value grid */
   .kv { display: grid; grid-template-columns: max-content 1fr; gap: 1px 1.4ch; margin: 0; }
@@ -1015,10 +1018,11 @@
     }
   });
 
-  screen.addEventListener("mousedown", function (e) {
-    if (e.target.closest("a")) return;
-    if (window.getSelection && String(window.getSelection())) return;
-    setTimeout(function () { input.focus(); }, 0);
+  screen.addEventListener("click", function (e) {
+    if (e.target.closest("a") || e.target.closest("button")) return;
+    var sel = window.getSelection && window.getSelection().toString();
+    if (sel) return;
+    input.focus({ preventScroll: true });
   });
 
   input.addEventListener("focus", function () { caret.classList.remove("off"); });
