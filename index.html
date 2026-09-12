@@ -289,6 +289,26 @@
   pre.tl i { color: var(--dim); font-style: normal; }
   pre.tl u { color: var(--title); text-decoration: none; }
 
+  /* ---- ls / tree ---- */
+  .lsgrid {
+    display: grid; gap: 2px 2.5ch;
+    grid-template-columns: repeat(auto-fill, minmax(22ch, max-content));
+  }
+  .lslong {
+    display: grid; gap: 1px 2ch;
+    grid-template-columns: max-content max-content max-content 1fr;
+    font-variant-numeric: tabular-nums;
+  }
+  .lslong .perm  { color: var(--dimmer); }
+  .lslong .size  { color: var(--dim); text-align: right; }
+  .lslong .mtime { color: var(--dim); }
+  .d { color: var(--key); }
+  .f { color: var(--fg); }
+  pre.tree {
+    margin: 0; font-family: var(--mono); font-size: 13.5px; line-height: 1.5;
+    color: var(--dim); overflow-x: auto;
+  }
+
   /* ---- grep ---- */
   .gr { display: flex; flex-direction: column; gap: 2px; }
   .gr .fname { color: var(--key); }
@@ -416,6 +436,115 @@
 
   /* ---------- content ---------- */
 
+  /* ==================================================================
+     CONTENT
+     Every section is built from one data source so the aggregate view
+     (`experience`) and the per-file view (`cat experience/…/x.md`)
+     can never disagree. L(en, zh) picks the language at call time, so
+     the data has to be produced lazily rather than held in a const.
+     ================================================================== */
+
+  function work() {
+    return [
+      {
+        dir:  "mediacorp",
+        name: L("Mediacorp", "Mediacorp (新传媒)"),
+        meta: L("AI Engineer Intern | AI Products &amp; Solutions Team · Singapore · Apr 2026 – Sep 2026",
+                "AI Engineer Intern | AI Products &amp; Solutions Team · 新加坡 · 2026 年 4 月 – 2026 年 9 月"),
+        date: "2026-09",
+        items: [
+          {
+            file: "compliance-agent.md",
+            title: L("Content Compliance Agent", "Content Compliance Agent"),
+            body: L('Built a LightRAG + Azure OpenAI service for first-pass review of AI-generated content and ad assets, indexing heterogeneous policy documents into chunks, entities and relations for hybrid graph-vector retrieval; answers scenario-based policy queries in under a minute, about 50% faster than the previous workflow, with a multi-signal confidence framework (groundedness, log-probs, semantic entropy) routing low-confidence outputs to human review.',
+                    '基于 LightRAG + Azure OpenAI 构建 AIGC 内容与广告的审查服务：将异构合规文档解析为文本块、实体与关系，实现图谱—向量混合检索，场景化合规问询可在 1 分钟内给出答案，较此前流程缩短约 50% 的时间；并设计多信号置信度框架（Groundedness Detection API、token 级 log-probs、语义熵），自动将低置信度输出路由至人工复核。')
+          },
+          {
+            file: "headline-generation.md",
+            title: L("8days Headline &amp; Brief Generation", "8days 标题与导语生成"),
+            body: L('Built a versioned prompt framework for a multi-brand headline service, encoding the brand’s SEO voice and factuality guardrails, with instructions and few-shot examples rewritten to the requested suggestion count; split generation across a GPT-5 / GPT-5.2 ensemble with schema-validated output (Responses API + Pydantic), tuned via an LLM-as-a-judge harness.',
+                    '构建版本化 Prompt 模块，封装该品牌的英式英语娱乐类 SEO 语感与事实性护栏，指令与 few-shot 示例可随指定的标题条数自动改写，免去逐一维护模板；生成任务拆分至两个 GPT-5 系模型，经 Responses API + Pydantic 强制结构化校验，并以 LLM-as-a-judge 评测流水线与 Prompt 单测持续调优。')
+          },
+          {
+            file: "dialect-tts.md",
+            title: L("Singapore Chinese Dialect TTS — Fine-tuning &amp; Evaluation",
+                     "Singapore Chinese Dialect TTS — 微调与评测"),
+            body: L('Fine-tuned Qwen3-TTS-12Hz-1.7B-Base for Hainanese, outside the base model’s supported languages: built the corpus via Whisper + stable-ts forced alignment, ran single-speaker SFT over 12Hz discrete audio codes (lr 2e-6, per-epoch checkpoint selection). Designed a 4-metric harness (ASR round-trip CER, Mandarin-leakage LangID, speaker similarity, native rating) for dialects with no production-grade ASR — adopted team-wide, and used to show the team’s Hokkien model outperforming comparable open-source dialect TTS models on pronunciation and naturalness.',
+                    '针对基座模型官方未支持的海南话微调 Qwen3-TTS-12Hz-1.7B-Base，以 Whisper + stable-ts 对齐构建语料并核对，在 12Hz 离散音频编码上完成单说话人 SFT（lr 2e-6，逐 epoch checkpoint 择优）。面向缺乏生产级 ASR 的方言场景，设计四项指标的评测框架（ASR 回环 CER、普通话混入检测 LangID、说话人相似度、母语者主观评分），已被团队采纳为标准流程，并据此验证团队福建话模型在发音准确度与自然度上优于同类开源方言 TTS 模型。')
+          },
+          {
+            file: "content-generator.md",
+            title: L("Multi-Version Content Generator", "Multi-Version Content Generator"),
+            body: L('Serverless FastAPI + Azure Functions service with a layered architecture separating generation, schema and rendering, so four channel formats (web / TV / radio / social) share one draft-to-language-check pipeline. Enforced structured output via the Responses API + Pydantic: per-channel schemas model each format’s required segments and derive word budgets from target duration, and every draft is validated before deterministic Markdown renderers take over. Abstracted two model families behind a single LLM interface, resolving per-family sampling parameters (GPT-4.1 temperature vs GPT-5 reasoning effort), with English instruction prompts driving Chinese-language output under a codified newsroom house style.',
+                    '基于 FastAPI + Azure Functions 的 Serverless 服务，采用「生成、Schema、渲染」三层解耦架构，使 Web、TV、Radio 和 Social 四种渠道格式复用同一条「草稿生成 → 语病检查」处理链路。为保证结构化输出，系统通过 Responses API 结合 Pydantic 进行强制约束：各渠道 Schema 分别定义该格式所需的分段结构，并根据目标时长反推字数预算；所有草稿均须通过校验，后交由确定性的 Markdown 渲染器成稿。系统底层将两个模型家族封装于统一的 LLM 接口内，自动解析各家族的采样参数差异（GPT-4.1 的 temperature 与 GPT-5 的 reasoning effort）。此外，系统采用英文 Prompt 驱动中文内容生成，并严格遵循代码化的新闻编辑室文风规范（house style）。')
+          }
+        ]
+      },
+      {
+        dir:  "perfect-information",
+        name: L("Shenzhen Perfect Information Technology Co., Ltd", "深圳普菲特信息科技有限公司"),
+        meta: L("Product Manager turned AI Engineer | Digital Intelligent Manufacturing Research Institute · Shenzhen, Shanghai, Changsha · Jul 2021 – Oct 2025",
+                "产品经理 | 数字智造研究院 · 深圳、上海、长沙 · 2021 年 7 月 – 2025 年 10 月"),
+        date: "2025-10",
+        items: [
+          {
+            file: "medical-agent.md",
+            title: L("Medical Agent for Chronic Disease Care", "慢病管理医疗 Agent"),
+            body: L('Led the team on a three-layer clinical knowledge pipeline: deterministic medication-safety rules (overdose / contraindication / eGFR) short-circuit the LLM path and write a red-flag record on hit; soft guidelines and structured KB retrieved by cosine similarity with time decay and metadata filters, merged into one context shared by patient intake and doctor Copilot. SEA-LION generation, MERaLiON dialect ASR, Zhipu Embedding-3 retrieval.',
+                    '主导完成端到端慢病管理智能体原型。设计三层临床知识融合管线（用药安全硬规则 / 软指南知识 / 结构化知识库检索），硬规则优先于模型输出，高危自我用药场景在进入常规问诊流程前被拦截并记录 red-flag；普通咨询与临床咨询做流程隔离，避免非医疗问题触发用药建议；患者问诊与医生端 Copilot 共享同一条知识融合链路，医生侧据此得到带证据来源的回复建议。接入 SEA-LION 做推理生成、MERaLiON 做方言语音转写、智谱 Embedding-3 做语义检索；编写 12 条验收用例，覆盖规则命中、高危用药拦截、流程隔离与 Copilot 引用正确性。')
+          },
+          {
+            file: "itsm-automation.md",
+            title: L("ITSM and SAP Ticket Automation", "ITSM 与 SAP 工单自动化"),
+            body: L('Led AI automation for ITSM and SAP analysis, integrating the AnythingLLM API — cut ticket resolution time 30% and operational efficiency 15%.',
+                    '主导 ITSM 与 SAP 运维工单分析场景的 AI 自动化落地，集成 AnythingLLM API，工单解决时长缩短 30%，运营效率提升 15%。')
+          },
+          {
+            file: "platform-delivery.md",
+            title: L("Enterprise Platform Delivery", "企业平台交付"),
+            body: L('Led delivery of enterprise HRMS, CRM, recruitment and SRM platforms from requirements through launch, digitalising internal management and improving process handling efficiency by 50%.',
+                    '主导 HRMS、CRM、招聘、SRM 等企业内部平台从需求到上线的全流程，推动内部管理数字化，提升相关流程处理效率约 50%。')
+          },
+          {
+            file: "digital-factory.md",
+            title: L("Intelligent Digital Factory", "智能数字工厂"),
+            body: L('Built for a leading optical manufacturer — production transparency, quality early-warning and performance digitalization, on lean-production methodology, from discovery to go-live.',
+                    '主导某光学行业龙头企业的智能数字工厂项目，以精益生产为方法论，统筹系统从需求调研到上线，达成生产流程透明化、质量预警及绩效管理数字化。')
+          }
+        ]
+      }
+    ];
+  }
+
+  function schools() {
+    return [
+      {
+        file: "ntu.md",
+        date: "2027-07",
+        name: L("Nanyang Technological University", "南洋理工大学"),
+        meta: L("Master of Computing in Applied AI | College of Computing and Data Science · Singapore · Nov 2025 – Jul 2027",
+                "计算机硕士（应用人工智能方向）| 计算与数据科学学院 · 新加坡 · 2025 年 11 月 – 2027 年 7 月"),
+        items: [
+          L('<span class="t">Core coursework</span> — Agentic AI &amp; Applications, LLMs &amp; RAG, Reinforcement Learning, Deep Learning, Natural Language Processing, AI Ethics &amp; Governance, Human-AI Interaction.',
+            '<span class="t">核心课程</span> — 智能体 AI 与应用、大语言模型与 RAG、强化学习、深度学习、自然语言处理、AI 伦理与治理、人机交互。')
+        ]
+      },
+      {
+        file: "nanjing-agricultural.md",
+        date: "2021-07",
+        name: L("Nanjing Agricultural University", "南京农业大学"),
+        meta: L("B.S. in Chinese Pharmacy · Nanjing · Sep 2017 – Jul 2021",
+                "中药学 本科 · 南京 · 2017 年 9 月 – 2021 年 7 月"),
+        items: [
+          L('<span class="t">Cross-disciplinary CS coursework</span> — Data Structures, Computer Organization &amp; Architecture, Big Data Technologies.',
+            '<span class="t">跨学科计算机课程</span> — 数据结构、计算机组成与体系结构、大数据技术。'),
+          L('Excellent Graduation Thesis (1 of only 2 in the major), Outstanding Student Assistant, Outstanding Reader (1 of only 50 university-wide).',
+            '校级优秀毕业论文（全专业仅 2 人）—《异病同治的网络药理学研究》；优秀学生助理；优秀毕业生读者（全校仅 50 人）。')
+        ]
+      }
+    ];
+  }
+
   var CMD = {};
 
   CMD.whoami = function () {
@@ -442,57 +571,15 @@
   };
 
   CMD.experience = function () {
-    return entry(
-      L("Mediacorp", "Mediacorp (新传媒)"),
-      L("AI Engineer Intern | AI Products &amp; Solutions Team · Singapore · Apr 2026 – Sep 2026",
-        "AI Engineer Intern | AI Products &amp; Solutions Team · 新加坡 · 2026 年 4 月 – 2026 年 9 月"),
-      [
-        L('<span class="t">Content Compliance Agent</span> — Built a LightRAG + Azure OpenAI service for first-pass review of AI-generated content and ad assets, indexing heterogeneous policy documents into chunks, entities and relations for hybrid graph-vector retrieval; answers scenario-based policy queries in under a minute, about 50% faster than the previous workflow, with a multi-signal confidence framework (groundedness, log-probs, semantic entropy) routing low-confidence outputs to human review.',
-          '<span class="t">Content Compliance Agent</span> — 基于 LightRAG + Azure OpenAI 构建 AIGC 内容与广告的审查服务：将异构合规文档解析为文本块、实体与关系，实现图谱—向量混合检索，场景化合规问询可在 1 分钟内给出答案，较此前流程缩短约 50% 的时间；并设计多信号置信度框架（Groundedness Detection API、token 级 log-probs、语义熵），自动将低置信度输出路由至人工复核。'),
-        L('<span class="t">8days Headline &amp; Brief Generation</span> — Built a versioned prompt framework for a multi-brand headline service, encoding the brand’s SEO voice and factuality guardrails, with instructions and few-shot examples rewritten to the requested suggestion count; split generation across a GPT-5 / GPT-5.2 ensemble with schema-validated output (Responses API + Pydantic), tuned via an LLM-as-a-judge harness.',
-          '<span class="t">8days 标题与导语生成</span> — 构建版本化 Prompt 模块，封装该品牌的英式英语娱乐类 SEO 语感与事实性护栏，指令与 few-shot 示例可随指定的标题条数自动改写，免去逐一维护模板；生成任务拆分至两个 GPT-5 系模型，经 Responses API + Pydantic 强制结构化校验，并以 LLM-as-a-judge 评测流水线与 Prompt 单测持续调优。'),
-        L('<span class="t">Singapore Chinese Dialect TTS — Fine-tuning &amp; Evaluation</span> — Fine-tuned Qwen3-TTS-12Hz-1.7B-Base for Hainanese, outside the base model’s supported languages: built the corpus via Whisper + stable-ts forced alignment, ran single-speaker SFT over 12Hz discrete audio codes (lr 2e-6, per-epoch checkpoint selection). Designed a 4-metric harness (ASR round-trip CER, Mandarin-leakage LangID, speaker similarity, native rating) for dialects with no production-grade ASR — adopted team-wide, and used to show the team’s Hokkien model outperforming comparable open-source dialect TTS models on pronunciation and naturalness.',
-          '<span class="t">Singapore Chinese Dialect TTS — 微调与评测</span> — 针对基座模型官方未支持的海南话微调 Qwen3-TTS-12Hz-1.7B-Base，以 Whisper + stable-ts 对齐构建语料并核对，在 12Hz 离散音频编码上完成单说话人 SFT（lr 2e-6，逐 epoch checkpoint 择优）。面向缺乏生产级 ASR 的方言场景，设计四项指标的评测框架（ASR 回环 CER、普通话混入检测 LangID、说话人相似度、母语者主观评分），已被团队采纳为标准流程，并据此验证团队福建话模型在发音准确度与自然度上优于同类开源方言 TTS 模型。'),
-        L('<span class="t">Multi-Version Content Generator</span> — Serverless FastAPI + Azure Functions service with a layered architecture separating generation, schema and rendering, so four channel formats (web / TV / radio / social) share one draft-to-language-check pipeline. Enforced structured output via the Responses API + Pydantic: per-channel schemas model each format’s required segments and derive word budgets from target duration, and every draft is validated before deterministic Markdown renderers take over. Abstracted two model families behind a single LLM interface, resolving per-family sampling parameters (GPT-4.1 temperature vs GPT-5 reasoning effort), with English instruction prompts driving Chinese-language output under a codified newsroom house style.',
-          '<span class="t">Multi-Version Content Generator</span> — 基于 FastAPI + Azure Functions 的 Serverless 服务，采用「生成、Schema、渲染」三层解耦架构，使 Web、TV、Radio 和 Social 四种渠道格式复用同一条「草稿生成 → 语病检查」处理链路。为保证结构化输出，系统通过 Responses API 结合 Pydantic 进行强制约束：各渠道 Schema 分别定义该格式所需的分段结构，并根据目标时长反推字数预算；所有草稿均须通过校验，后交由确定性的 Markdown 渲染器成稿。系统底层将两个模型家族封装于统一的 LLM 接口内，自动解析各家族的采样参数差异（GPT-4.1 的 temperature 与 GPT-5 的 reasoning effort）。此外，系统采用英文 Prompt 驱动中文内容生成，并严格遵循代码化的新闻编辑室文风规范（house style）。')
-      ]
-    ) + entry(
-      L("Shenzhen Perfect Information Technology Co., Ltd", "深圳普菲特信息科技有限公司"),
-      L("Product Manager turned AI Engineer | Digital Intelligent Manufacturing Research Institute · Shenzhen, Shanghai, Changsha · Jul 2021 – Oct 2025",
-        "产品经理 | 数字智造研究院 · 深圳、上海、长沙 · 2021 年 7 月 – 2025 年 10 月"),
-      [
-        L('<span class="t">Medical Agent for Chronic Disease Care</span> — Led the team on a three-layer clinical knowledge pipeline: deterministic medication-safety rules (overdose / contraindication / eGFR) short-circuit the LLM path and write a red-flag record on hit; soft guidelines and structured KB retrieved by cosine similarity with time decay and metadata filters, merged into one context shared by patient intake and doctor Copilot. SEA-LION generation, MERaLiON dialect ASR, Zhipu Embedding-3 retrieval.',
-          '<span class="t">慢病管理医疗 Agent</span> — 主导完成端到端慢病管理智能体原型。设计三层临床知识融合管线（用药安全硬规则 / 软指南知识 / 结构化知识库检索），硬规则优先于模型输出，高危自我用药场景在进入常规问诊流程前被拦截并记录 red-flag；普通咨询与临床咨询做流程隔离，避免非医疗问题触发用药建议；患者问诊与医生端 Copilot 共享同一条知识融合链路，医生侧据此得到带证据来源的回复建议。接入 SEA-LION 做推理生成、MERaLiON 做方言语音转写、智谱 Embedding-3 做语义检索；编写 12 条验收用例，覆盖规则命中、高危用药拦截、流程隔离与 Copilot 引用正确性。'),
-        L('Led AI automation for ITSM and SAP analysis, integrating the AnythingLLM API — cut ticket resolution time 30% and operational efficiency 15%.',
-          '主导 ITSM 与 SAP 运维工单分析场景的 AI 自动化落地，集成 AnythingLLM API，工单解决时长缩短 30%，运营效率提升 15%。'),
-        L('Led delivery of enterprise HRMS, CRM, recruitment and SRM platforms from requirements through launch, digitalising internal management and improving process handling efficiency by 50%.',
-          '主导 HRMS、CRM、招聘、SRM 等企业内部平台从需求到上线的全流程，推动内部管理数字化，提升相关流程处理效率约 50%。'),
-        L('<span class="t">Intelligent Digital Factory for a leading optical manufacturer</span> — production transparency, quality early-warning and performance digitalization, on lean-production methodology, from discovery to go-live.',
-          '<span class="t">智能数字工厂</span> — 主导某光学行业龙头企业的智能数字工厂项目，以精益生产为方法论，统筹系统从需求调研到上线，达成生产流程透明化、质量预警及绩效管理数字化。')
-      ]
-    );
+    return work().map(function (co) {
+      return entry(co.name, co.meta, co.items.map(function (it) {
+        return '<span class="t">' + it.title + "</span> — " + it.body;
+      }));
+    }).join("");
   };
 
   CMD.education = function () {
-    return entry(
-      L("Nanyang Technological University", "南洋理工大学"),
-      L("Master of Computing in Applied AI | College of Computing and Data Science · Singapore · Nov 2025 – Jul 2027",
-        "计算机硕士（应用人工智能方向）| 计算与数据科学学院 · 新加坡 · 2025 年 11 月 – 2027 年 7 月"),
-      [
-        L('<span class="t">Core coursework</span> — Agentic AI &amp; Applications, LLMs &amp; RAG, Reinforcement Learning, Deep Learning, Natural Language Processing, AI Ethics &amp; Governance, Human-AI Interaction.',
-          '<span class="t">核心课程</span> — 智能体 AI 与应用、大语言模型与 RAG、强化学习、深度学习、自然语言处理、AI 伦理与治理、人机交互。')
-      ]
-    ) + entry(
-      L("Nanjing Agricultural University", "南京农业大学"),
-      L("B.S. in Chinese Pharmacy · Nanjing · Sep 2017 – Jul 2021",
-        "中药学 本科 · 南京 · 2017 年 9 月 – 2021 年 7 月"),
-      [
-        L('<span class="t">Cross-disciplinary CS coursework</span> — Data Structures, Computer Organization &amp; Architecture, Big Data Technologies.',
-          '<span class="t">跨学科计算机课程</span> — 数据结构、计算机组成与体系结构、大数据技术。'),
-        L('Excellent Graduation Thesis (1 of only 2 in the major), Outstanding Student Assistant, Outstanding Reader (1 of only 50 university-wide).',
-          '校级优秀毕业论文（全专业仅 2 人）—《异病同治的网络药理学研究》；优秀学生助理；优秀毕业生读者（全校仅 50 人）。')
-      ]
-    );
+    return schools().map(function (s) { return entry(s.name, s.meta, s.items); }).join("");
   };
 
   CMD.skills = function () {
@@ -541,6 +628,303 @@
       [L("languages", "语言"), L("Mandarin (native) · English (fluent)", "中文（母语）· 英文（流利）")]
     ]);
   };
+
+  /* ==================================================================
+     VIRTUAL FILESYSTEM
+     A nested object, rebuilt whenever the language changes so paths and
+     contents stay in step. Files carry a render function rather than a
+     string, so a file and the section command that prints it are the
+     same code.
+     ================================================================== */
+
+  function f(render, date) { return { type: "file", render: render, date: date || "2026-09" }; }
+  function d(children)     { return { type: "dir",  children: children }; }
+
+  var ROOT = null;
+  var CWD  = [];
+
+  function buildFS() {
+    var exp = {};
+    work().forEach(function (co) {
+      var kids = {};
+      co.items.forEach(function (it) {
+        kids[it.file] = f(function () {
+          return entry(it.title, co.name + " · " + co.meta, [it.body]);
+        }, co.date);
+      });
+      exp[co.dir] = d(kids);
+    });
+
+    var edu = {};
+    schools().forEach(function (s) {
+      edu[s.file] = f(function () { return entry(s.name, s.meta, s.items); }, s.date);
+    });
+
+    ROOT = d({
+      "about.txt":  f(CMD.about, "2026-09"),
+      "experience": d(exp),
+      "education":  d(edu),
+      "skills.md":  f(CMD.skills, "2026-09"),
+      "projects":   d({ "medical-agent-prototype.md": f(CMD.projects, "2026-08") }),
+      "contact.md": f(CMD.contact, "2026-09")
+    });
+    SIZES = {};
+  }
+
+  /* ---------- paths ---------- */
+
+  function resolvePath(path) {
+    var base;
+    if (!path || path === "~" || path === "/") return [];
+    if (path.charAt(0) === "/" || path === "~" || path.indexOf("~/") === 0) base = [];
+    else base = CWD.slice();
+
+    var cleaned = path.replace(/^~\/?/, "").replace(/^\//, "");
+    var segs = cleaned.split("/");
+    for (var i = 0; i < segs.length; i++) {
+      var seg = segs[i];
+      if (!seg || seg === ".") continue;
+      if (seg === "..") { base.pop(); continue; }
+      base.push(seg);
+    }
+    return base;
+  }
+
+  function nodeAt(segs) {
+    var n = ROOT;
+    for (var i = 0; i < segs.length; i++) {
+      if (!n || n.type !== "dir") return null;
+      n = n.children[segs[i]];
+    }
+    return n || null;
+  }
+
+  function pathStr(segs) { return segs.length ? "~/" + segs.join("/") : "~"; }
+
+  function noSuch(cmd, path) {
+    return '<span class="err">' + cmd + ": " + esc(path) + ": " +
+           L("No such file or directory", "没有那个文件或目录") + "</span>";
+  }
+
+  /* ---------- sizes, measured from what the file actually renders ---------- */
+
+  var SIZES = {};
+
+  function sizeOf(node, key) {
+    if (node.type === "dir") {
+      var total = 0;
+      for (var k in node.children) total += sizeOf(node.children[k], key + "/" + k);
+      return total;
+    }
+    if (SIZES[key] == null) {
+      var box = document.createElement("div");
+      box.innerHTML = node.render();
+      SIZES[key] = box.textContent.replace(/\s+/g, " ").trim().length;
+    }
+    return SIZES[key];
+  }
+
+  /* ---------- ls ---------- */
+
+  function nameCell(name, node) {
+    return node.type === "dir"
+      ? '<span class="d">' + esc(name) + "/</span>"
+      : '<span class="f">' + esc(name) + "</span>";
+  }
+
+  function cmdLs(args) {
+    var flags = args.filter(function (a) { return a.charAt(0) === "-"; }).join("");
+    var rest  = args.filter(function (a) { return a.charAt(0) !== "-"; });
+    var long  = flags.indexOf("l") !== -1;
+    var path  = rest[0] || ".";
+
+    var segs = resolvePath(path);
+    var node = nodeAt(segs);
+    if (!node) return noSuch("ls", path);
+
+    if (node.type === "file") {
+      return long ? lsLong([[segs[segs.length - 1], node, segs.join("/")]]) : nameCell(segs[segs.length - 1], node);
+    }
+
+    var names = Object.keys(node.children).sort(function (a, b) {
+      var A = node.children[a].type === "dir", B = node.children[b].type === "dir";
+      if (A !== B) return A ? -1 : 1;
+      return a < b ? -1 : 1;
+    });
+    if (!names.length) return '<span class="dim">' + L("(empty)", "（空）") + "</span>";
+
+    if (long) {
+      return lsLong(names.map(function (n) {
+        return [n, node.children[n], segs.concat(n).join("/")];
+      }));
+    }
+    return '<div class="lsgrid">' + names.map(function (n) {
+      return nameCell(n, node.children[n]);
+    }).join("") + "</div>";
+  }
+
+  function lsLong(rows) {
+    return '<div class="lslong">' + rows.map(function (r) {
+      var name = r[0], node = r[1], key = r[2];
+      var perm = node.type === "dir" ? "drwxr-xr-x" : "-rw-r--r--";
+      var date = node.type === "dir" ? dirDate(node) : node.date;
+      return '<span class="perm">' + perm + "</span>" +
+             '<span class="size">' + sizeOf(node, key) + "</span>" +
+             '<span class="mtime">' + date + "</span>" +
+             nameCell(name, node);
+    }).join("") + "</div>";
+  }
+
+  function dirDate(node) {
+    var latest = "";
+    (function walk(n) {
+      for (var k in n.children) {
+        var c = n.children[k];
+        if (c.type === "dir") walk(c);
+        else if (c.date > latest) latest = c.date;
+      }
+    })(node);
+    return latest || "2026-09";
+  }
+
+  /* ---------- tree ---------- */
+
+  function cmdTree(args) {
+    var path = args[0] || ".";
+    var segs = resolvePath(path);
+    var node = nodeAt(segs);
+    if (!node) return noSuch("tree", path);
+    if (node.type === "file") return '<pre class="tree">' + esc(path) + "</pre>";
+
+    var lines = [pathStr(segs)];
+    var dirs = 0, files = 0;
+
+    (function walk(n, prefix) {
+      var names = Object.keys(n.children).sort(function (a, b) {
+        var A = n.children[a].type === "dir", B = n.children[b].type === "dir";
+        if (A !== B) return A ? -1 : 1;
+        return a < b ? -1 : 1;
+      });
+      names.forEach(function (name, i) {
+        var last = i === names.length - 1;
+        var child = n.children[name];
+        lines.push(prefix + (last ? "└── " : "├── ") + nameCell(name, child));
+        if (child.type === "dir") { dirs++; walk(child, prefix + (last ? "    " : "│   ")); }
+        else files++;
+      });
+    })(node, "");
+
+    lines.push("");
+    lines.push('<span class="dim">' + dirs + L(" directories, ", " 个目录，") + files + L(" files", " 个文件") + "</span>");
+    return '<pre class="tree">' + lines.join("\n") + "</pre>";
+  }
+
+  /* ---------- cat, cd, pwd ---------- */
+
+  function cmdCat(args) {
+    if (!args.length) {
+      return '<span class="dim">' + L("usage: cat &lt;file&gt;", "用法：cat &lt;文件&gt;") + "</span>";
+    }
+    return args.map(function (path) {
+      var node = nodeAt(resolvePath(path));
+      if (!node) return noSuch("cat", path);
+      if (node.type === "dir") {
+        return '<span class="err">cat: ' + esc(path) + ": " + L("Is a directory", "是一个目录") + "</span>";
+      }
+      return node.render();
+    }).join('<div style="height:10px"></div>');
+  }
+
+  function cmdCd(args) {
+    var path = args[0] || "~";
+    var segs = resolvePath(path);
+    var node = nodeAt(segs);
+    if (!node) return noSuch("cd", path);
+    if (node.type !== "dir") {
+      return '<span class="err">cd: ' + esc(path) + ": " + L("Not a directory", "不是目录") + "</span>";
+    }
+    CWD = segs;
+    refreshPrompt();
+    return null;
+  }
+
+  function cmdPwd() { return pathStr(CWD); }
+
+  /* ---------- grep, walking the tree ---------- */
+
+  function fileLines(node, key) {
+    var box = document.createElement("div");
+    box.innerHTML = node.render();
+    var out = [];
+    each(box.querySelectorAll("dl.kv"), function (dl) {
+      var dts = dl.querySelectorAll("dt"), dds = dl.querySelectorAll("dd");
+      for (var i = 0; i < dts.length; i++) {
+        out.push(dts[i].textContent.trim() + ": " + (dds[i] ? dds[i].textContent.trim() : ""));
+      }
+    });
+    each(box.querySelectorAll(".entry"), function (e) {
+      var h = e.querySelector("h2"), m = e.querySelector(".meta");
+      if (h) out.push(h.textContent.trim() + (m ? " — " + m.textContent.trim() : ""));
+      each(e.querySelectorAll("li"), function (li) { out.push(li.textContent.trim()); });
+      var tg = e.querySelectorAll(".tag");
+      if (tg.length) out.push(Array.prototype.map.call(tg, function (t) { return t.textContent.trim(); }).join(", "));
+    });
+    each(box.children, function (c) { if (c.tagName === "P") out.push(c.textContent.trim()); });
+    return out.filter(Boolean).map(function (t) { return t.replace(/\s+/g, " "); });
+  }
+
+  function collect(node, prefix, recursive, acc) {
+    for (var name in node.children) {
+      var child = node.children[name];
+      var p = prefix ? prefix + "/" + name : name;
+      if (child.type === "file") acc.push([p, child]);
+      else if (recursive) collect(child, p, true, acc);
+    }
+    return acc;
+  }
+
+  function cmdGrep(args) {
+    var recursive = false, term = null, path = null;
+    args.forEach(function (a) {
+      if (a.charAt(0) === "-") { if (a.indexOf("r") !== -1) recursive = true; }
+      else if (term === null) term = a;
+      else if (path === null) path = a;
+    });
+
+    if (!term) {
+      return '<span class="dim">' + L("usage: grep [-r] &lt;term&gt; [path]", "用法：grep [-r] &lt;关键词&gt; [路径]") + "</span>";
+    }
+
+    var segs = resolvePath(path || (CWD.length ? "." : "~"));
+    var node = nodeAt(segs);
+    if (!node) return noSuch("grep", path);
+
+    var files = node.type === "file"
+      ? [[segs.join("/"), node]]
+      : collect(node, segs.join("/"), recursive || !path, []);
+
+    var needle = term.toLowerCase();
+    var hits = [];
+    files.forEach(function (pair) {
+      fileLines(pair[1], pair[0]).forEach(function (line, i) {
+        if (line.toLowerCase().indexOf(needle) !== -1) hits.push([pair[0], i + 1, line]);
+      });
+    });
+
+    if (!hits.length) {
+      return '<span class="err">grep: ' + L("no match for ", "未匹配到 ") + "“" + esc(term) + "”</span>";
+    }
+
+    var re = new RegExp("(" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig");
+    var rows = hits.slice(0, 24).map(function (h) {
+      return '<div><span class="fname">' + esc(h[0]) + '</span><span class="ln">:' + h[1] + ':</span> ' +
+             esc(h[2]).replace(re, "<mark>$1</mark>") + "</div>";
+    }).join("");
+    var more = hits.length > 24
+      ? '<div class="dim">' + L("… and " + (hits.length - 24) + " more", "… 另有 " + (hits.length - 24) + " 条") + "</div>"
+      : "";
+    return '<div class="gr">' + rows + more + "</div>";
+  }
 
   /* ---------- timeline ---------- */
 
@@ -604,95 +988,37 @@
       '<div class="dim">──────────────────</div>' + kv(rows) + "</div></div>";
   };
 
-  /* ---------- files, grep, help ---------- */
-
-  var FILES = [
-    ["about.txt",     "about"],
-    ["experience.md", "experience"],
-    ["education.md",  "education"],
-    ["skills.md",     "skills"],
-    ["projects.md",   "projects"],
-    ["contact.md",    "contact"]
-  ];
-
-  CMD.ls = function () {
-    return '<div class="scrollx">' + FILES.map(function (f) {
-      return '<span class="cmdref">' + f[0] + "</span>";
-    }).join("&nbsp;&nbsp;") + "</div>";
-  };
-
-  function each(list, fn) { Array.prototype.forEach.call(list, fn); }
-
-  // Build grep's corpus from what the commands actually render, so the index
-  // can never drift from the page.
-  function corpus() {
-    var lines = [];
-    FILES.forEach(function (f) {
-      var box = document.createElement("div");
-      box.innerHTML = CMD[f[1]]();
-      var local = [];
-      each(box.querySelectorAll("dl.kv"), function (dl) {
-        var dts = dl.querySelectorAll("dt"), dds = dl.querySelectorAll("dd");
-        for (var i = 0; i < dts.length; i++) {
-          local.push(dts[i].textContent.trim() + ": " + (dds[i] ? dds[i].textContent.trim() : ""));
-        }
-      });
-      each(box.querySelectorAll(".entry"), function (e) {
-        var h = e.querySelector("h2"), m = e.querySelector(".meta");
-        if (h) local.push(h.textContent.trim() + (m ? " — " + m.textContent.trim() : ""));
-        each(e.querySelectorAll("li"), function (li) { local.push(li.textContent.trim()); });
-        var tg = e.querySelectorAll(".tag");
-        if (tg.length) local.push(Array.prototype.map.call(tg, function (t) { return t.textContent.trim(); }).join(", "));
-      });
-      each(box.children, function (c) {
-        if (c.tagName === "P") local.push(c.textContent.trim());
-      });
-      local.forEach(function (t, i) {
-        if (t) lines.push([f[0], i + 1, t.replace(/\s+/g, " ")]);
-      });
-    });
-    return lines;
-  }
-
-  function grep(term) {
-    if (!term) {
-      return '<span class="dim">' + L("usage: grep &lt;term&gt;", "用法：grep &lt;关键词&gt;") + "</span>";
-    }
-    var needle = term.toLowerCase();
-    var hits = corpus().filter(function (r) { return r[2].toLowerCase().indexOf(needle) !== -1; });
-    if (!hits.length) {
-      return '<span class="err">grep: ' + L("no match for ", "未匹配到 ") + '“' + esc(term) + '”</span>';
-    }
-    var re = new RegExp("(" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig");
-    var rows = hits.slice(0, 24).map(function (r) {
-      var text = esc(r[2]).replace(re, "<mark>$1</mark>");
-      return '<div><span class="fname">' + r[0] + '</span><span class="ln">:' + r[1] + ':</span> ' + text + "</div>";
-    }).join("");
-    var more = hits.length > 24
-      ? '<div class="dim">' + L("… and " + (hits.length - 24) + " more", "… 另有 " + (hits.length - 24) + " 条") + "</div>"
-      : "";
-    return '<div class="gr">' + rows + more + "</div>";
-  }
+  /* ---------- help ---------- */
 
   CMD.help = function () {
     return kv([
       ["whoami",     '<span class="dim">' + L("the short version", "一句话版本") + "</span>"],
       ["about",      '<span class="dim">' + L("the slightly longer version", "稍长一点的版本") + "</span>"],
-      ["experience", '<span class="dim">' + L("what I have built and where", "做过什么，在哪里做的") + "</span>"],
+      ["experience", '<span class="dim">' + L("everything I have built, in full", "全部工作经历") + "</span>"],
       ["education",  '<span class="dim">' + L("pharmacy, then computing", "药学，然后是计算机") + "</span>"],
       ["skills",     '<span class="dim">' + L("tools I actually use", "真正在用的工具") + "</span>"],
       ["projects",   '<span class="dim">' + L("what is public", "公开的部分") + "</span>"],
       ["contact",    '<span class="dim">' + L("how to reach me", "怎么找到我") + "</span>"],
       ["timeline",   '<span class="dim">' + L("the arc, drawn out", "职业轨迹") + "</span>"],
       ["neofetch",   '<span class="dim">' + L("the obligatory one", "该有的那个") + "</span>"],
-      ["grep &lt;term&gt;", '<span class="dim">' + L("search everything above", "在全部内容里搜索") + "</span>"],
-      ["theme",      '<span class="dim">' + L("default · green · amber", "default · green · amber") + "</span>"],
+      ["theme",      '<span class="dim">default · green · amber</span>'],
       [L("zh", "en"), '<span class="dim">' + L("切换到中文", "switch to English") + "</span>"],
-      ["ls",         '<span class="dim">' + L("list files", "列出文件") + "</span>"],
       ["clear",      '<span class="dim">' + L("clear the screen", "清屏") + "</span>"]
-    ]) + '<p class="dim" style="margin:8px 0 0">' +
-      L("Tab completes, and lists the candidates when more than one fits. ↑ and ↓ walk the history.",
-        "Tab 补全；有多个候选时按 Tab 列出全部。↑ ↓ 翻历史命令。") + "</p>";
+    ]) +
+    '<p class="dim" style="margin:12px 0 6px">' +
+      L("Everything above also lives in a directory tree you can walk:",
+        "上面的内容同时存在于一棵可以走的目录树里：") + "</p>" +
+    kv([
+      ["tree",              '<span class="dim">' + L("show the whole tree", "显示整棵目录树") + "</span>"],
+      ["ls [-l] [path]",    '<span class="dim">' + L("list a directory", "列出目录内容") + "</span>"],
+      ["cd &lt;path&gt;",   '<span class="dim">' + L("change directory", "切换目录") + "</span>"],
+      ["pwd",               '<span class="dim">' + L("where am I", "当前路径") + "</span>"],
+      ["cat &lt;file&gt;",  '<span class="dim">' + L("print a file", "打印文件内容") + "</span>"],
+      ["grep [-r] &lt;term&gt;", '<span class="dim">' + L("search, recursively with -r", "搜索，-r 递归") + "</span>"]
+    ]) +
+    '<p class="dim" style="margin:10px 0 0">' +
+      L("Tab completes paths, and lists the candidates when more than one fits. ↑ and ↓ walk the history.",
+        "Tab 补全路径；有多个候选时按 Tab 列出全部。↑ ↓ 翻历史命令。") + "</p>";
   };
 
   CMD.sudo = function () {
@@ -730,14 +1056,17 @@
 
   var ALIASES = {
     cv: "experience", resume: "experience", work: "experience", man: "help", "?": "help",
+    dir: "ls", ll: "ls",
     "关于": "about", "经历": "experience", "教育": "education", "技能": "skills",
     "项目": "projects", "联系": "contact", "帮助": "help", "时间线": "timeline",
     cn: "zh", "中文": "zh", english: "en"
   };
 
-  var NAMES = ["about", "cat", "clear", "contact", "education", "en", "experience", "grep",
-               "help", "ls", "neofetch", "projects", "skills", "theme", "timeline", "vim",
-               "whoami", "zh"];
+  var PATH_CMDS = { ls: 1, cd: 1, cat: 1, tree: 1, grep: 1 };
+
+  var NAMES = ["about", "cat", "cd", "clear", "contact", "education", "en", "experience",
+               "grep", "help", "ls", "neofetch", "projects", "pwd", "skills", "theme",
+               "timeline", "tree", "vim", "whoami", "zh"];
 
   var screen  = document.getElementById("screen");
   var history = document.getElementById("history");
@@ -748,172 +1077,17 @@
   var hints   = document.getElementById("hints");
   var titleEl = document.getElementById("titletext");
 
-  /* The titlebar reports the window's real size in characters, the way a
-     terminal does — measured, not hard-coded, since the window now resizes. */
-  function reportSize() {
-    var probe = document.createElement("span");
-    probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;top:0;left:0";
-    probe.textContent = new Array(101).join("0");
-    screen.appendChild(probe);
-    var cw = probe.getBoundingClientRect().width / 100;
-    screen.removeChild(probe);
-
-    var cs = getComputedStyle(screen);
-    var lh = parseFloat(cs.lineHeight);
-    if (!cw || !lh) return;
-
-    var w = screen.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    var h = screen.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    var cols = Math.max(1, Math.floor(w / cw));
-    var rows = Math.max(1, Math.floor(h / lh));
-    titleEl.textContent = "dingpu@ntu — zsh — " + cols + "\u00d7" + rows;
-  }
-
-  var sizeTick = 0;
-  function queueSize() {
-    cancelAnimationFrame(sizeTick);
-    sizeTick = requestAnimationFrame(reportSize);
-  }
-  window.addEventListener("resize", function () { clampFree(); queueSize(); });
-
-  /* ------------------------------------------------------------------
-     Window chrome: the three lights do what they do on macOS, the
-     titlebar drags, and the corner grip resizes.
-
-     Two layouts. "fit" is the default — the window flexes to the
-     viewport. The first drag or resize switches to "free", where the
-     window carries an explicit size and offset like a real one.
-     ------------------------------------------------------------------ */
-
-  var shell   = document.querySelector(".shell");
-  var win     = document.querySelector(".window");
-  var titlebar= document.querySelector(".titlebar");
-  var grip    = document.getElementById("grip");
-  var closed  = document.getElementById("closed");
-
-  var free = false, zoomed = false, mini = false;
-  var fw = 0, fh = 0, tx = 0, ty = 0;
-
-  var MIN_W = 340, MIN_H = 220;
-
-  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
-
-  function pad() { return parseFloat(getComputedStyle(document.body).paddingLeft) || 0; }
-
-  function clampFree() {
-    if (!free || zoomed) return;
-    var maxW = window.innerWidth  - pad() * 2;
-    var maxH = window.innerHeight - pad() * 2;
-    fw = clamp(fw, MIN_W, Math.max(MIN_W, maxW));
-    fh = clamp(fh, MIN_H, Math.max(MIN_H, maxH));
-    tx = clamp(tx, -pad(), Math.max(0, maxW - fw + pad()));
-    ty = clamp(ty, -pad(), Math.max(0, maxH - fh + pad()));
-    paint();
-  }
-
-  function paint() {
-    shell.classList.toggle("free", free && !zoomed);
-    shell.classList.toggle("zoomed", zoomed);
-    document.body.classList.toggle("zoomed", zoomed);
-    win.classList.toggle("mini", mini);
-    shell.classList.toggle("mini", mini);
-
-    if (zoomed || !free) {
-      shell.style.width = shell.style.height = shell.style.transform = "";
-    } else {
-      shell.style.width  = fw + "px";
-      shell.style.height = mini ? "" : fh + "px";
-      shell.style.transform = (tx || ty) ? "translate(" + tx + "px," + ty + "px)" : "";
-    }
-    queueSize();
-  }
-
-  function goFree() {
-    if (free) return;
-    var r = shell.getBoundingClientRect();
-    fw = Math.round(r.width);
-    fh = Math.round(r.height);
-    tx = ty = 0;
-    free = true;
-  }
-
-  function drag(handle, onMove, guard) {
-    handle.addEventListener("pointerdown", function (e) {
-      if (e.button !== 0) return;
-      if (guard && guard(e)) return;
-      goFree();
-      paint();
-      var sx = e.clientX, sy = e.clientY, w0 = fw, h0 = fh, x0 = tx, y0 = ty;
-      handle.setPointerCapture(e.pointerId);
-      handle.classList.add("dragging");
-
-      function move(ev) {
-        onMove(ev.clientX - sx, ev.clientY - sy, w0, h0, x0, y0);
-        clampFree();
-      }
-      function stop() {
-        handle.classList.remove("dragging");
-        handle.removeEventListener("pointermove", move);
-        handle.removeEventListener("pointerup", stop);
-        handle.removeEventListener("pointercancel", stop);
-      }
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", stop);
-      handle.addEventListener("pointercancel", stop);
-      e.preventDefault();
-    });
-  }
-
-  drag(grip, function (dx, dy, w0, h0) {
-    if (zoomed || mini) return;
-    fw = w0 + dx;
-    fh = h0 + dy;
-  });
-
-  drag(titlebar, function (dx, dy, w0, h0, x0, y0) {
-    if (zoomed) return;
-    tx = x0 + dx;
-    ty = y0 + dy;
-  }, function (e) { return !!e.target.closest(".lights"); });
-
-  document.getElementById("btnZoom").addEventListener("click", function () {
-    zoomed = !zoomed;
-    if (zoomed) mini = false;
-    paint();
-  });
-
-  titlebar.addEventListener("dblclick", function (e) {
-    if (e.target.closest(".lights")) return;
-    zoomed = !zoomed;
-    if (zoomed) mini = false;
-    paint();
-  });
-
-  document.getElementById("btnMin").addEventListener("click", function () {
-    mini = !mini;
-    if (mini) zoomed = false;
-    paint();
-  });
-
-  document.getElementById("btnClose").addEventListener("click", function () {
-    document.body.classList.add("closed-mode");
-    document.getElementById("closedText").textContent =
-      L("[Process completed]", "[进程已结束]");
-    document.getElementById("reopen").textContent = L("Reopen", "重新打开");
-  });
-
-  document.getElementById("reopen").addEventListener("click", function () {
-    document.body.classList.remove("closed-mode");
-    paint();
-    input.focus();
-  });
-
   var past = [];
   var cursor = -1;
 
   function ps1() {
     return '<span class="ps1"><span>dingpu@ntu</span><span class="sig">:</span>' +
-           '<span class="path">~</span><span class="sig">$</span></span>';
+           '<span class="path">' + esc(pathStr(CWD)) + '</span><span class="sig">$</span></span>';
+  }
+
+  function refreshPrompt() {
+    var el = document.querySelector("#liveline .ps1");
+    if (el) el.outerHTML = ps1();
   }
 
   function render(cmd, html) {
@@ -931,21 +1105,26 @@
 
     var parts = cmd.split(/\s+/);
     var head = parts[0].toLowerCase();
-    var rest = parts.slice(1).join(" ");
+    var args = parts.slice(1);
 
     if (ALIASES[head]) head = ALIASES[head];
-    if (head === "cat" && rest) {
-      var f = FILES.filter(function (x) { return x[0] === rest.toLowerCase(); })[0];
-      if (f) return CMD[f[1]]();
-      return '<span class="err">cat: ' + esc(rest) + ": " + L("No such file", "没有这个文件") + "</span>";
+
+    switch (head) {
+      case "ls":   return cmdLs(args);
+      case "cd":   return cmdCd(args);
+      case "pwd":  return cmdPwd();
+      case "cat":  return cmdCat(args);
+      case "tree": return cmdTree(args);
+      case "grep": return cmdGrep(args);
+      case "theme": return theme(args.join(" ").trim().toLowerCase());
+      case "sudo": return CMD.sudo();
     }
-    if (head === "grep")  return grep(rest);
-    if (head === "theme") return theme(rest.trim().toLowerCase());
-    if (head === "sudo")  return CMD.sudo();
 
     if (head === "zh" || head === "en") {
       LANG = head;
       store("lang", LANG);
+      buildFS();
+      CWD = [];
       boot(true);
       return null;
     }
@@ -961,10 +1140,19 @@
     var cmd = raw.trim();
     if (cmd) { past.push(cmd); cursor = past.length; }
     var head = cmd.split(/\s+/)[0].toLowerCase();
+    if (ALIASES[head]) head = ALIASES[head];
     if (head === "clear") { history.innerHTML = ""; return; }
+
+    var prompt = ps1();   // capture before cd can change it
     var out = resolve(cmd);
-    if (head === "zh" || head === "en" || ALIASES[head] === "zh" || ALIASES[head] === "en") return;
-    render(esc(cmd), out);
+    if (head === "zh" || head === "en") return;
+
+    var block = document.createElement("div");
+    block.className = "block";
+    block.innerHTML =
+      '<div class="cmdline">' + prompt + '<span class="typed">' + esc(cmd) + "</span></div>" +
+      (out ? '<div class="out">' + out + "</div>" : "");
+    history.appendChild(block);
   }
 
   function sync() { mirror.textContent = input.value; }
@@ -972,7 +1160,7 @@
 
   /* ---------- chips + boot ---------- */
 
-  var CHIPS = ["help", "experience", "skills", "timeline", "neofetch", "contact"];
+  var CHIPS = ["help", "tree", "experience", "skills", "timeline", "neofetch", "contact"];
 
   function drawHints() {
     hints.innerHTML = '<span class="lead">' + L("Try:", "试试：") + "</span>" +
@@ -993,8 +1181,8 @@
     render(L("cat about.txt", "cat about.txt"), CMD.about());
     var note = document.createElement("div");
     note.className = "block dim";
-    note.innerHTML = L('Type <span class="cmdref">help</span> for the rest, or press <span class="cmdref">Tab</span>.',
-                       '输入 <span class="cmdref">help</span> 看全部命令，或按 <span class="cmdref">Tab</span> 补全。');
+    note.innerHTML = L('Type <span class="cmdref">help</span> for the rest, or <span class="cmdref">tree</span> to see how it is laid out — it is a real directory tree, so <span class="cmdref">cd</span>, <span class="cmdref">ls</span> and <span class="cmdref">cat</span> work.',
+                       '输入 <span class="cmdref">help</span> 看全部命令，或 <span class="cmdref">tree</span> 看目录结构 —— 这是一棵真的目录树，<span class="cmdref">cd</span>、<span class="cmdref">ls</span>、<span class="cmdref">cat</span> 都能用。');
     history.appendChild(note);
     drawHints();
     toBottom();
@@ -1030,12 +1218,30 @@
     var rest = value.slice(sp + 1);
     var lead = rest.length - rest.replace(/^\s+/, "").length;
     var frag = rest.slice(lead);
-    if (frag.indexOf(" ") !== -1) return null;      // only one argument completes
-
+    if (frag.indexOf(" ") !== -1) {                  // completing a later argument
+      var last = frag.lastIndexOf(" ");
+      lead += last + 1;
+      frag = frag.slice(last + 1);
+    }
     var keep = value.slice(0, sp + 1 + lead);
-    if (head === "cat")   return { frag: frag.toLowerCase(), list: FILES.map(function (f) { return f[0]; }), keep: keep };
+
     if (head === "theme") return { frag: frag.toLowerCase(), list: THEMES, keep: keep };
-    return null;
+    if (!PATH_CMDS[head]) return null;
+
+    var cut  = frag.lastIndexOf("/");
+    var dirp = cut === -1 ? "" : frag.slice(0, cut + 1);
+    var name = cut === -1 ? frag : frag.slice(cut + 1);
+
+    var node = nodeAt(resolvePath(dirp || "."));
+    if (!node || node.type !== "dir") return null;
+
+    var names = Object.keys(node.children).map(function (k) {
+      return k + (node.children[k].type === "dir" ? "/" : "");
+    });
+    if (head === "cd") names = names.filter(function (k) { return k.slice(-1) === "/"; });
+    names.sort();
+
+    return { frag: name.toLowerCase(), list: names, keep: keep + dirp, paths: true };
   }
 
   function listCandidates(list) {
@@ -1058,7 +1264,8 @@
     if (!hits.length) return;
 
     if (hits.length === 1) {
-      input.value = ctx.keep + hits[0] + " ";
+      var only = hits[0];
+      input.value = ctx.keep + only + (only.slice(-1) === "/" ? "" : " ");
       sync();
       return;
     }
@@ -1125,6 +1332,7 @@
   if (savedPhos === "green" || savedPhos === "amber" || savedPhos === "default") PHOS = savedPhos;
   applyPhosphor();
 
+  buildFS();
   boot(false);
   reportSize();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(reportSize);
