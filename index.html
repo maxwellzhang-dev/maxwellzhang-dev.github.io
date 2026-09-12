@@ -691,7 +691,8 @@
       ["ls",         '<span class="dim">' + L("list files", "列出文件") + "</span>"],
       ["clear",      '<span class="dim">' + L("clear the screen", "清屏") + "</span>"]
     ]) + '<p class="dim" style="margin:8px 0 0">' +
-      L("Tab completes. ↑ and ↓ walk the history.", "Tab 补全，↑ ↓ 翻历史命令。") + "</p>";
+      L("Tab completes, and lists the candidates when more than one fits. ↑ and ↓ walk the history.",
+        "Tab 补全；有多个候选时按 Tab 列出全部。↑ ↓ 翻历史命令。") + "</p>";
   };
 
   CMD.sudo = function () {
@@ -734,8 +735,9 @@
     cn: "zh", "中文": "zh", english: "en"
   };
 
-  var NAMES = ["help", "whoami", "about", "experience", "education", "skills", "projects",
-               "contact", "timeline", "neofetch", "grep", "theme", "zh", "en", "ls", "clear"];
+  var NAMES = ["about", "cat", "clear", "contact", "education", "en", "experience", "grep",
+               "help", "ls", "neofetch", "projects", "skills", "theme", "timeline", "vim",
+               "whoami", "zh"];
 
   var screen  = document.getElementById("screen");
   var history = document.getElementById("history");
@@ -998,6 +1000,79 @@
     toBottom();
   }
 
+  /* ---------- completion ----------
+     bash/zsh behaviour, not "complete only when unambiguous": Tab extends to
+     the longest common prefix, and when that adds nothing with more than one
+     candidate left, the candidates are listed the way a shell lists them.
+     Arguments complete too — file names after `cat`, theme names after
+     `theme`. */
+
+  var THEMES = ["default", "green", "amber"];
+
+  function commonPrefix(list) {
+    var p = list[0] || "";
+    for (var i = 1; i < list.length; i++) {
+      var q = list[i], j = 0;
+      while (j < p.length && j < q.length && p.charAt(j) === q.charAt(j)) j++;
+      p = p.slice(0, j);
+      if (!p) break;
+    }
+    return p;
+  }
+
+  function completionContext(value) {
+    var sp = value.indexOf(" ");
+    if (sp === -1) return { frag: value.toLowerCase(), list: NAMES, keep: "" };
+
+    var head = value.slice(0, sp).trim().toLowerCase();
+    if (ALIASES[head]) head = ALIASES[head];
+
+    var rest = value.slice(sp + 1);
+    var lead = rest.length - rest.replace(/^\s+/, "").length;
+    var frag = rest.slice(lead);
+    if (frag.indexOf(" ") !== -1) return null;      // only one argument completes
+
+    var keep = value.slice(0, sp + 1 + lead);
+    if (head === "cat")   return { frag: frag.toLowerCase(), list: FILES.map(function (f) { return f[0]; }), keep: keep };
+    if (head === "theme") return { frag: frag.toLowerCase(), list: THEMES, keep: keep };
+    return null;
+  }
+
+  function listCandidates(list) {
+    var block = document.createElement("div");
+    block.className = "block";
+    block.innerHTML =
+      '<div class="cmdline">' + ps1() + '<span class="typed">' + esc(input.value) + "</span></div>" +
+      '<div class="out scrollx">' +
+      list.map(function (n) { return '<span class="cmdref">' + esc(n) + "</span>"; }).join("&nbsp;&nbsp;") +
+      "</div>";
+    history.appendChild(block);
+    toBottom();
+  }
+
+  function complete() {
+    var ctx = completionContext(input.value);
+    if (!ctx) return;
+
+    var hits = ctx.list.filter(function (n) { return n.indexOf(ctx.frag) === 0; });
+    if (!hits.length) return;
+
+    if (hits.length === 1) {
+      input.value = ctx.keep + hits[0] + " ";
+      sync();
+      return;
+    }
+
+    var pre = commonPrefix(hits);
+    if (pre.length > ctx.frag.length) {
+      input.value = ctx.keep + pre;
+      sync();
+      return;
+    }
+
+    listCandidates(hits);
+  }
+
   /* ---------- input ---------- */
 
   input.addEventListener("input", sync);
@@ -1013,10 +1088,7 @@
     }
     if (e.key === "Tab") {
       e.preventDefault();
-      var frag = input.value.trim().toLowerCase();
-      if (!frag) return;
-      var hit = NAMES.filter(function (n) { return n.indexOf(frag) === 0; });
-      if (hit.length === 1) { input.value = hit[0]; sync(); }
+      complete();
       return;
     }
     if (e.key === "ArrowUp") {
