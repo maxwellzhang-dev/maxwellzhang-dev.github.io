@@ -133,10 +133,63 @@
     padding: 9px 13px;
   }
   .lights { display: flex; gap: 7px; flex: 0 0 auto; }
-  .light { width: 11px; height: 11px; border-radius: 50%; }
+  .light {
+    width: 12px; height: 12px; border-radius: 50%;
+    padding: 0; border: 0; cursor: pointer;
+    display: grid; place-items: center;
+    font: 600 9px/1 var(--sans); color: #00000088;
+    -webkit-appearance: none; appearance: none;
+  }
   .light.r { background: #e05f53; }
   .light.y { background: #e0a33c; }
   .light.g { background: #4fb955; }
+  .light span { opacity: 0; transition: opacity .12s ease; pointer-events: none; }
+  .lights:hover .light span { opacity: 1; }
+  .light:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .titlebar { cursor: grab; user-select: none; touch-action: none; }
+  .titlebar.dragging { cursor: grabbing; }
+
+  /* ---- window states ---- */
+  .shell.free { flex: none; margin: 0; }
+  .shell.zoomed { max-width: none; gap: 0; }
+  body.zoomed { padding: 0; }
+  .shell.zoomed .window { border-radius: 0; border-width: 0 0 1px; }
+  .shell.zoomed .hints { padding: 10px 14px; }
+
+  .window.mini { flex: none; }
+  .window.mini .screen { display: none; }
+  .shell.mini { flex: none; margin-bottom: auto; }
+
+  /* ---- resize grip ---- */
+  .window { position: relative; }
+  .grip {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize; touch-action: none;
+    background:
+      linear-gradient(135deg, transparent 0 44%, var(--dimmer) 44% 52%, transparent 52% 66%,
+                      var(--dimmer) 66% 74%, transparent 74%);
+    opacity: .55;
+  }
+  .grip:hover { opacity: 1; }
+  .shell.zoomed .grip, .window.mini .grip { display: none; }
+
+  /* ---- closed state ---- */
+  .closed {
+    margin: auto; display: none; flex-direction: column; align-items: center; gap: 12px;
+    color: var(--dim); text-align: center;
+  }
+  body.closed-mode .shell { display: none; }
+  body.closed-mode .closed { display: flex; }
+  .closed pre { margin: 0; color: var(--accent); font-size: 13px; line-height: 1.2; }
+  .closed button {
+    font-family: var(--mono); font-size: 13px; color: var(--fg);
+    background: var(--bg-win); border: 1px solid var(--rule);
+    border-radius: 6px; padding: 7px 16px; cursor: pointer;
+  }
+  .closed button:hover { color: var(--accent); border-color: var(--dimmer); }
+  .closed button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .titletext {
     flex: 1; text-align: center;
@@ -283,8 +336,10 @@
 <div class="shell">
   <div class="window">
     <div class="titlebar">
-      <div class="lights" aria-hidden="true">
-        <span class="light r"></span><span class="light y"></span><span class="light g"></span>
+      <div class="lights">
+        <button type="button" class="light r" id="btnClose" aria-label="Close"><span>&times;</span></button>
+        <button type="button" class="light y" id="btnMin" aria-label="Minimise"><span>&minus;</span></button>
+        <button type="button" class="light g" id="btnZoom" aria-label="Zoom"><span>&plus;</span></button>
       </div>
       <div class="titletext" id="titletext">dingpu@ntu — zsh</div>
       <div class="titlespacer" aria-hidden="true"></div>
@@ -300,9 +355,21 @@
       <input id="entry" autocomplete="off" autocapitalize="off" autocorrect="off"
              spellcheck="false" aria-label="Terminal command input">
     </div>
+
+    <div class="grip" id="grip" role="separator" aria-label="Resize window"></div>
   </div>
 
   <div class="hints" id="hints"></div>
+</div>
+
+<div class="closed" id="closed">
+  <pre>  ┌────────────────┐
+  │                │
+  │                │
+  │                │
+  └────────────────┘</pre>
+  <div id="closedText">[Process completed]</div>
+  <button type="button" id="reopen">Reopen</button>
 </div>
 
 <script>
@@ -685,7 +752,139 @@
     cancelAnimationFrame(sizeTick);
     sizeTick = requestAnimationFrame(reportSize);
   }
-  window.addEventListener("resize", queueSize);
+  window.addEventListener("resize", function () { clampFree(); queueSize(); });
+
+  /* ------------------------------------------------------------------
+     Window chrome: the three lights do what they do on macOS, the
+     titlebar drags, and the corner grip resizes.
+
+     Two layouts. "fit" is the default — the window flexes to the
+     viewport. The first drag or resize switches to "free", where the
+     window carries an explicit size and offset like a real one.
+     ------------------------------------------------------------------ */
+
+  var shell   = document.querySelector(".shell");
+  var win     = document.querySelector(".window");
+  var titlebar= document.querySelector(".titlebar");
+  var grip    = document.getElementById("grip");
+  var closed  = document.getElementById("closed");
+
+  var free = false, zoomed = false, mini = false;
+  var fw = 0, fh = 0, tx = 0, ty = 0;
+
+  var MIN_W = 340, MIN_H = 220;
+
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  function pad() { return parseFloat(getComputedStyle(document.body).paddingLeft) || 0; }
+
+  function clampFree() {
+    if (!free || zoomed) return;
+    var maxW = window.innerWidth  - pad() * 2;
+    var maxH = window.innerHeight - pad() * 2;
+    fw = clamp(fw, MIN_W, Math.max(MIN_W, maxW));
+    fh = clamp(fh, MIN_H, Math.max(MIN_H, maxH));
+    tx = clamp(tx, -pad(), Math.max(0, maxW - fw + pad()));
+    ty = clamp(ty, -pad(), Math.max(0, maxH - fh + pad()));
+    paint();
+  }
+
+  function paint() {
+    shell.classList.toggle("free", free && !zoomed);
+    shell.classList.toggle("zoomed", zoomed);
+    document.body.classList.toggle("zoomed", zoomed);
+    win.classList.toggle("mini", mini);
+    shell.classList.toggle("mini", mini);
+
+    if (zoomed || !free) {
+      shell.style.width = shell.style.height = shell.style.transform = "";
+    } else {
+      shell.style.width  = fw + "px";
+      shell.style.height = mini ? "" : fh + "px";
+      shell.style.transform = (tx || ty) ? "translate(" + tx + "px," + ty + "px)" : "";
+    }
+    queueSize();
+  }
+
+  function goFree() {
+    if (free) return;
+    var r = shell.getBoundingClientRect();
+    fw = Math.round(r.width);
+    fh = Math.round(r.height);
+    tx = ty = 0;
+    free = true;
+  }
+
+  function drag(handle, onMove, guard) {
+    handle.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0) return;
+      if (guard && guard(e)) return;
+      goFree();
+      paint();
+      var sx = e.clientX, sy = e.clientY, w0 = fw, h0 = fh, x0 = tx, y0 = ty;
+      handle.setPointerCapture(e.pointerId);
+      handle.classList.add("dragging");
+
+      function move(ev) {
+        onMove(ev.clientX - sx, ev.clientY - sy, w0, h0, x0, y0);
+        clampFree();
+      }
+      function stop() {
+        handle.classList.remove("dragging");
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", stop);
+        handle.removeEventListener("pointercancel", stop);
+      }
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", stop);
+      handle.addEventListener("pointercancel", stop);
+      e.preventDefault();
+    });
+  }
+
+  drag(grip, function (dx, dy, w0, h0) {
+    if (zoomed || mini) return;
+    fw = w0 + dx;
+    fh = h0 + dy;
+  });
+
+  drag(titlebar, function (dx, dy, w0, h0, x0, y0) {
+    if (zoomed) return;
+    tx = x0 + dx;
+    ty = y0 + dy;
+  }, function (e) { return !!e.target.closest(".lights"); });
+
+  document.getElementById("btnZoom").addEventListener("click", function () {
+    zoomed = !zoomed;
+    if (zoomed) mini = false;
+    paint();
+  });
+
+  titlebar.addEventListener("dblclick", function (e) {
+    if (e.target.closest(".lights")) return;
+    zoomed = !zoomed;
+    if (zoomed) mini = false;
+    paint();
+  });
+
+  document.getElementById("btnMin").addEventListener("click", function () {
+    mini = !mini;
+    if (mini) zoomed = false;
+    paint();
+  });
+
+  document.getElementById("btnClose").addEventListener("click", function () {
+    document.body.classList.add("closed-mode");
+    document.getElementById("closedText").textContent =
+      L("[Process completed]", "[进程已结束]");
+    document.getElementById("reopen").textContent = L("Reopen", "重新打开");
+  });
+
+  document.getElementById("reopen").addEventListener("click", function () {
+    document.body.classList.remove("closed-mode");
+    paint();
+    input.focus();
+  });
 
   var past = [];
   var cursor = -1;
