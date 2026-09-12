@@ -19,7 +19,8 @@
 
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; }
+  html, body { margin: 0; }
+  html { height: 100%; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
 </style>
@@ -93,14 +94,31 @@
     font-size: 14px;
     line-height: 1.65;
     min-height: 100vh;
-    padding: clamp(18px, 5vw, 56px) clamp(12px, 4vw, 32px) clamp(28px, 6vw, 64px);
+    min-height: 100dvh;
+    display: flex;
+    padding: clamp(10px, 2.2vw, 28px);
     -webkit-font-smoothing: antialiased;
   }
 
-  .shell { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  /* The page is the app, so the window fills the viewport the way a
+     maximised terminal does, rather than sitting in a fixed-height box. */
+  .shell {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 
   /* ---- window chrome ---- */
   .window {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     background: var(--bg-win);
     border: 1px solid var(--rule);
     border-radius: 10px;
@@ -130,8 +148,9 @@
 
   /* ---- terminal body ---- */
   .screen {
-    padding: 18px clamp(14px, 3vw, 22px) 22px;
-    height: clamp(440px, 66vh, 620px);
+    padding: 18px clamp(14px, 2.2vw, 26px) 22px;
+    flex: 1;
+    min-height: 240px;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -152,6 +171,10 @@
   .typed { color: var(--fg); word-break: break-word; }
 
   .out { margin-top: 5px; }
+
+  /* Tables, ASCII and tag rows use the full width; running prose stops at a
+     readable measure, the way a program wraps its own output. */
+  ul.bul li, .entry > p, .out > p, h2.head + .meta { max-width: 92ch; }
 
   /* key : value grid */
   .kv { display: grid; grid-template-columns: max-content 1fr; gap: 1px 1.4ch; margin: 0; }
@@ -249,8 +272,7 @@
   }
 
   @media (max-width: 560px) {
-    body { font-size: 13px; }
-    .screen { height: 72vh; }
+    body { font-size: 13px; padding: 8px; }
     .kv { grid-template-columns: 1fr; gap: 0; }
     .kv dt { color: var(--key); margin-top: 7px; }
     .kv dt:first-child { margin-top: 0; }
