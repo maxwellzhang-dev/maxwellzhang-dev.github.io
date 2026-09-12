@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Zhang Dingpu — AI engineer working on agents, RAG, post-training and evaluation. Based in Singapore, graduating Jul 2027.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2314151d'/%3E%3Cpath d='M16 22l10 10-10 10' stroke='%23e6a244' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M34 42h14' stroke='%236cc0cf' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Zhang Dingpu — AI Engineer">
+<meta property="og:description" content="Zhang Dingpu — AI engineer working on agents, RAG, post-training and evaluation. Based in Singapore, graduating Jul 2027.">
+<meta name="twitter:card" content="summary">
+
+<title>dingpu@ntu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@500;600&display=swap">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<style>
+  /* Deliberately single-theme: this page is a terminal window, and a terminal
+     that flips to a light ground stops being the thing it is. Every colour is
+     painted explicitly so the page holds on either host background. */
+  :root {
+    --bg-page:    #0b0c11;
+    --bg-win:     #14151d;
+    --bg-chrome:  #1e202b;
+    --rule:       #2b2e3c;
+    --fg:         #d6d3c9;
+    --dim:        #797e94;
+    --dimmer:     #565b6e;
+    --amber:      #e6a244;
+    --cyan:       #6cc0cf;
+    --green:      #93c27a;
+    --violet:     #b48ad6;
+    --rose:       #d97f7f;
+
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  html { background: var(--bg-page); }
+
+  body {
+    background:
+      radial-gradient(1100px 620px at 50% -12%, #1a1c28 0%, rgba(26,28,40,0) 62%),
+      var(--bg-page);
+    color: var(--fg);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.65;
+    min-height: 100vh;
+    padding: clamp(18px, 5vw, 56px) clamp(12px, 4vw, 32px) clamp(28px, 6vw, 64px);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ---- window chrome ---- */
+  .window {
+    background: var(--bg-win);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px -24px rgba(0,0,0,.8), 0 2px 0 0 rgba(255,255,255,.03) inset;
+  }
+
+  .titlebar {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(180deg, #23253100 0%, #00000022 100%), var(--bg-chrome);
+    border-bottom: 1px solid var(--rule);
+    padding: 9px 13px;
+  }
+  .lights { display: flex; gap: 7px; flex: 0 0 auto; }
+  .light { width: 11px; height: 11px; border-radius: 50%; }
+  .light.r { background: #e05f53; }
+  .light.y { background: #e0a33c; }
+  .light.g { background: #4fb955; }
+
+  .titletext {
+    flex: 1; text-align: center;
+    font-family: var(--sans); font-weight: 500; font-size: 12px;
+    color: var(--dim); letter-spacing: .02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .titlespacer { flex: 0 0 45px; }
+
+  /* ---- terminal body ---- */
+  .screen {
+    padding: 18px clamp(14px, 3vw, 22px) 22px;
+    height: clamp(440px, 66vh, 620px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+    cursor: text;
+  }
+  .screen::-webkit-scrollbar { width: 10px; }
+  .screen::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 6px; }
+
+  .block { margin-bottom: 16px; }
+  .block:last-child { margin-bottom: 0; }
+
+  /* ---- prompt ---- */
+  .cmdline { display: flex; flex-wrap: wrap; gap: 0 .55ch; }
+  .ps1 { color: var(--green); white-space: nowrap; }
+  .ps1 .path { color: var(--cyan); }
+  .ps1 .sig  { color: var(--dim); }
+  .typed { color: var(--fg); word-break: break-word; }
+
+  .out { margin-top: 5px; }
+
+  /* key : value grid */
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 1px 1.4ch; }
+  .kv dt { color: var(--cyan); }
+  .kv dd { margin: 0; color: var(--fg); }
+  .kv dd .sub { color: var(--dim); display: block; }
+
+  h2.head {
+    font: 500 14px/1.65 var(--mono);
+    color: var(--amber);
+    margin: 0 0 2px;
+  }
+  h2.head + .meta { color: var(--dim); margin: 0 0 8px; }
+
+  .entry { margin-bottom: 14px; }
+  .entry:last-child { margin-bottom: 0; }
+
+  ul.bul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+  ul.bul li { padding-left: 2.2ch; position: relative; color: var(--fg); }
+  ul.bul li::before { content: "›"; position: absolute; left: 0; color: var(--amber); }
+  ul.bul li .t { color: var(--violet); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 5px 6px; margin-top: 3px; }
+  .tag {
+    font-size: 12.5px; color: var(--fg);
+    background: #1d1f2a; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 1px 7px;
+  }
+
+  a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid #6cc0cf55; }
+  a:hover { border-bottom-color: var(--cyan); }
+  a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 2px; }
+
+  .dim { color: var(--dim); }
+  .amber { color: var(--amber); }
+  .green { color: var(--green); }
+  .rose  { color: var(--rose); }
+  .cmdref { color: var(--amber); }
+
+  /* wide content never pushes the page sideways */
+  .scrollx { overflow-x: auto; }
+
+  /* ---- live input line ---- */
+  .live { display: flex; flex-wrap: wrap; gap: 0 .55ch; align-items: baseline; }
+  #entry {
+    position: absolute; opacity: 0; pointer-events: none;
+    width: 1px; height: 1px; left: -9999px;
+  }
+  #mirror { color: var(--fg); word-break: break-word; white-space: pre-wrap; }
+  .caret {
+    display: inline-block; width: 1ch; height: 1.1em;
+    background: var(--amber); vertical-align: text-bottom;
+    animation: blink 1.15s steps(1) infinite;
+  }
+  .caret.off { animation: none; background: transparent; box-shadow: inset 0 0 0 1px var(--dim); }
+  @keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+  /* ---- chrome below the window ---- */
+  .hints { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .hints .lead { font-family: var(--sans); font-size: 12px; color: var(--dimmer); margin-right: 2px; }
+  button.chip {
+    font-family: var(--mono); font-size: 12.5px; color: var(--dim);
+    background: transparent; border: 1px solid var(--rule);
+    border-radius: 5px; padding: 3px 9px; cursor: pointer;
+    transition: color .12s ease, border-color .12s ease;
+  }
+  button.chip:hover { color: var(--amber); border-color: #4a4436; }
+  button.chip:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+    button.chip { transition: none; }
+  }
+
+  @media (max-width: 560px) {
+    body { font-size: 13px; }
+    .screen { height: 72vh; }
+    .kv { grid-template-columns: 1fr; gap: 0; }
+    .kv dt { color: var(--cyan); margin-top: 7px; }
+    .kv dt:first-child { margin-top: 0; }
+  }
+</style>
+
+<div class="shell">
+  <div class="window">
+    <div class="titlebar">
+      <div class="lights" aria-hidden="true">
+        <span class="light r"></span><span class="light y"></span><span class="light g"></span>
+      </div>
+      <div class="titletext">dingpu@ntu — zsh — 88×26</div>
+      <div class="titlespacer" aria-hidden="true"></div>
+    </div>
+
+    <div class="screen" id="screen" role="log" aria-live="polite" aria-label="Terminal output">
+      <div id="history"></div>
+
+      <div class="live" id="liveline">
+        <span class="ps1"><span>dingpu@ntu</span><span class="sig">:</span><span class="path">~</span><span class="sig">$</span></span>
+        <span id="mirror"></span><span class="caret" id="caret" aria-hidden="true"></span>
+      </div>
+      <input id="entry" autocomplete="off" autocapitalize="off" autocorrect="off"
+             spellcheck="false" aria-label="Terminal command input">
+    </div>
+  </div>
+
+  <div class="hints">
+    <span class="lead">Try:</span>
+    <button class="chip" data-cmd="help">help</button>
+    <button class="chip" data-cmd="experience">experience</button>
+    <button class="chip" data-cmd="skills">skills</button>
+    <button class="chip" data-cmd="projects">projects</button>
+    <button class="chip" data-cmd="contact">contact</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var GH = "https://github.com/maxwellzhang-dev";
+  var LI = "https://www.linkedin.com/in/dingpu-z-64b8b41a5/";
+  var MAIL = "dingpu001@e.ntu.edu.sg";
+
+  var FILES = ["about.txt", "experience.md", "education.md", "skills.md", "projects.md", "contact.md"];
+
+  function kv(rows) {
+    return '<dl class="kv">' + rows.map(function (r) {
+      return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>";
+    }).join("") + "</dl>";
+  }
+
+  function entry(title, meta, bullets) {
+    return '<div class="entry"><h2 class="head">' + title + "</h2>" +
+      '<p class="meta">' + meta + "</p>" +
+      '<ul class="bul">' + bullets.map(function (b) { return "<li>" + b + "</li>"; }).join("") + "</ul></div>";
+  }
+
+  function tags(label, items) {
+    return '<div class="entry"><h2 class="head">' + label + "</h2>" +
+      '<div class="tags">' + items.map(function (t) { return '<span class="tag">' + t + "</span>"; }).join("") + "</div></div>";
+  }
+
+  var CMD = {};
+
+  CMD.whoami = function () {
+    return '<div class="amber">Zhang Dingpu &nbsp;张鼎溥</div>' +
+           '<div class="dim">AI Engineer · Singapore</div>';
+  };
+
+  CMD["about.txt"] = CMD.about = function () {
+    return kv([
+      ["role", "AI Engineer"],
+      ["now", 'AI Engineer Intern @ Mediacorp <span class="dim">— Singapore</span>'],
+      ["studying", 'M.Comp in Applied AI, NTU <span class="dim">— graduating Jul 2027</span>'],
+      ["before", 'four years in product management, then the pivot<span class="sub">BSc Chinese Pharmacy, Nanjing Agricultural University</span>'],
+      ["builds", 'agents, RAG, post-training, evaluation'],
+      ["believes", '<span class="amber">“There are no solutions, there are only trade-offs; and you try to get the best trade-off you can get, that’s all you can hope for.”</span><span class="sub">— Thomas Sowell</span>'],
+      ["available", 'full-time from Jul 2027<span class="sub">internships from Oct 2026</span>'],
+      ["status", '<span class="green">open to opportunities</span>']
+    ]);
+  };
+
+  CMD["experience.md"] = CMD.experience = CMD.work = function () {
+    return entry(
+      "Mediacorp — AI Products &amp; Solutions",
+      "AI Engineer Intern · Singapore · Apr 2026 – Sep 2026",
+      [
+        '<span class="t">Content Compliance Agent</span> — hybrid graph-vector retrieval (LightRAG + Azure OpenAI) for AIGC and ad review, with multi-signal confidence scoring that routes low-confidence answers to a human.',
+        '<span class="t">Multi-brand headline generation</span> — onboarded a third newsroom onto a shared service through a versioned prompt framework; structured output with schema validation, tuned against an LLM-as-a-judge harness.',
+        '<span class="t">Singapore Chinese dialect TTS</span> — fine-tuned a TTS model for Hainanese, a language the base model does not support, and built the four-metric evaluation harness the team now uses as standard.',
+        '<span class="t">Multi-Version Content Generator</span> — serverless FastAPI service where generation, schema and rendering are decoupled, so web, TV, radio and social share one draft-to-language-check pipeline.'
+      ]
+    ) + entry(
+      "Shenzhen Perfect Information Technology",
+      "Product Manager → AI Engineer · Jul 2021 – Oct 2025",
+      [
+        '<span class="t">Medical agent for chronic disease care</span> — led the team building a patient ↔ agent ↔ clinician loop: multimodal intake, cross-session patient memory, and a three-layer clinical knowledge pipeline where hard medication-safety rules short-circuit the model and escalate red flags.',
+        '<span class="t">Enterprise AI automation</span> — LLM-assisted triage for ITSM and SAP tickets.',
+        '<span class="t">Platform delivery</span> — HRMS, CRM, recruitment and SRM systems end to end, plus a lean-production digital factory from discovery to go-live.'
+      ]
+    );
+  };
+
+  CMD["education.md"] = CMD.education = function () {
+    return entry("Nanyang Technological University", "Master of Computing in Applied AI · Singapore · Nov 2025 – Jul 2027", [
+      "Agentic AI, LLMs &amp; RAG, reinforcement learning, deep learning, NLP, AI ethics and governance, human-AI interaction."
+    ]) + entry("Nanjing Agricultural University", "BSc Chinese Pharmacy · Nanjing · 2017 – 2021", [
+      'Thesis in network pharmacology <span class="dim">— compound-target-disease networks, enrichment analysis, molecular docking.</span>',
+      'Named an <span class="t">Outstanding Graduation Thesis</span>, one of two in the major.'
+    ]);
+  };
+
+  CMD["skills.md"] = CMD.skills = function () {
+    return tags("core", ["Python", "LLM application engineering", "Agents", "RAG", "Prompt systems", "Evaluation design"]) +
+      tags("frameworks", ["OpenAI SDK", "LangChain", "LangGraph", "MCP", "DSPy", "PyTorch", "FastAPI"]) +
+      tags("retrieval &amp; data", ["GraphRAG", "FAISS", "Milvus", "Neo4j / Cypher", "SQL", "Redis"]) +
+      tags("platform", ["Azure AI Foundry", "Azure Functions", "AWS", "Docker", "Kubernetes", "Linux", "Git"]) +
+      tags("also", ["Claude Code", "SFT / fine-tuning", "TTS &amp; speech", "LLM-as-a-judge harnesses"]);
+  };
+
+  CMD["projects.md"] = CMD.projects = function () {
+    return entry("medical-agent-prototype", "TypeScript · public", [
+      'An independent reimplementation of the clinical-agent architecture: intake, memory, and a rules-before-model safety layer. <a href="' + GH + '" target="_blank" rel="noopener">github.com/maxwellzhang-dev</a>'
+    ]) + '<p class="dim">Most of the rest is employer work and lives behind an NDA. Ask me about it — the architecture travels even when the code does not.</p>';
+  };
+
+  CMD["contact.md"] = CMD.contact = function () {
+    return kv([
+      ["email", '<a href="mailto:' + MAIL + '">' + MAIL + "</a>"],
+      ["linkedin", '<a href="' + LI + '" target="_blank" rel="noopener">dingpu-z</a>'],
+      ["github", '<a href="' + GH + '" target="_blank" rel="noopener">maxwellzhang-dev</a>'],
+      ["based in", 'Singapore <span class="dim">— open to Shanghai, Shenzhen, Beijing</span>'],
+      ["languages", "Mandarin (native) · English (fluent)"]
+    ]);
+  };
+
+  CMD.ls = function () {
+    return '<div class="scrollx">' + FILES.map(function (f) {
+      return '<span class="cmdref">' + f + "</span>";
+    }).join("&nbsp;&nbsp;") + "</div>";
+  };
+
+  CMD.help = function () {
+    return kv([
+      ["whoami", '<span class="dim">the short version</span>'],
+      ["about", '<span class="dim">the slightly longer version</span>'],
+      ["experience", '<span class="dim">what I have built and where</span>'],
+      ["education", '<span class="dim">pharmacy, then computing</span>'],
+      ["skills", '<span class="dim">tools I actually use</span>'],
+      ["projects", '<span class="dim">what is public</span>'],
+      ["contact", '<span class="dim">how to reach me</span>'],
+      ["ls", '<span class="dim">list files</span>'],
+      ["clear", '<span class="dim">clear the screen</span>']
+    ]) + '<p class="dim" style="margin:8px 0 0">Tab completes. ↑ and ↓ walk the history.</p>';
+  };
+
+  CMD.sudo = function () {
+    return '<span class="rose">dingpu is not in the sudoers file.</span> ' +
+           '<span class="dim">This incident will be reported.</span>';
+  };
+
+  var ALIASES = { cv: "experience", resume: "experience", "cat about.txt": "about", man: "help", "?": "help" };
+
+  var NAMES = ["help", "whoami", "about", "experience", "education", "skills", "projects", "contact", "ls", "clear"];
+
+  var screen  = document.getElementById("screen");
+  var history = document.getElementById("history");
+  var input   = document.getElementById("entry");
+  var mirror  = document.getElementById("mirror");
+  var caret   = document.getElementById("caret");
+  var live    = document.getElementById("liveline");
+
+  var past = [];
+  var cursor = -1;
+
+  function ps1() {
+    return '<span class="ps1"><span>dingpu@ntu</span><span class="sig">:</span>' +
+           '<span class="path">~</span><span class="sig">$</span></span>';
+  }
+
+  function render(cmd, html) {
+    var block = document.createElement("div");
+    block.className = "block";
+    block.innerHTML =
+      '<div class="cmdline">' + ps1() + '<span class="typed">' + cmd + "</span></div>" +
+      (html ? '<div class="out">' + html + "</div>" : "");
+    history.appendChild(block);
+  }
+
+  function resolve(raw) {
+    var cmd = raw.trim();
+    if (!cmd) return null;
+    var key = cmd.toLowerCase();
+
+    if (key === "clear") { history.innerHTML = ""; return null; }
+    if (ALIASES[key]) key = ALIASES[key];
+
+    if (key.indexOf("cat ") === 0) key = key.slice(4).trim();
+    if (key.indexOf("sudo") === 0) key = "sudo";
+
+    var fn = CMD[key];
+    if (fn) return fn();
+    return '<span class="rose">zsh: command not found: ' + cmd.replace(/</g, "&lt;") + "</span>" +
+           '<div class="dim">Type <span class="cmdref">help</span> to see what is here.</div>';
+  }
+
+  function run(raw) {
+    var cmd = raw.trim();
+    if (cmd) { past.push(cmd); cursor = past.length; }
+    if (cmd.toLowerCase() === "clear") { history.innerHTML = ""; return; }
+    render(cmd.replace(/</g, "&lt;"), resolve(cmd));
+  }
+
+  function sync() { mirror.textContent = input.value; }
+
+  function toBottom() { screen.scrollTop = screen.scrollHeight; }
+
+  input.addEventListener("input", sync);
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      run(input.value);
+      input.value = "";
+      sync();
+      toBottom();
+      return;
+    }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      var frag = input.value.trim().toLowerCase();
+      if (!frag) return;
+      var hit = NAMES.filter(function (n) { return n.indexOf(frag) === 0; });
+      if (hit.length === 1) { input.value = hit[0]; sync(); }
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!past.length) return;
+      cursor = Math.max(0, cursor - 1);
+      input.value = past[cursor]; sync();
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!past.length) return;
+      cursor = Math.min(past.length, cursor + 1);
+      input.value = cursor === past.length ? "" : past[cursor];
+      sync();
+    }
+  });
+
+  screen.addEventListener("mousedown", function (e) {
+    if (e.target.closest("a")) return;
+    if (window.getSelection && String(window.getSelection())) return;
+    setTimeout(function () { input.focus(); }, 0);
+  });
+
+  input.addEventListener("focus", function () { caret.classList.remove("off"); });
+  input.addEventListener("blur",  function () { caret.classList.add("off"); });
+
+  Array.prototype.forEach.call(document.querySelectorAll("button.chip"), function (b) {
+    b.addEventListener("click", function () {
+      run(b.getAttribute("data-cmd"));
+      toBottom();
+      input.focus();
+    });
+  });
+
+  // The page at rest already shows who this is: two commands are pre-run.
+  render("whoami", CMD.whoami());
+  render("cat about.txt", CMD.about());
+  var note = document.createElement("div");
+  note.className = "block dim";
+  note.innerHTML = 'Type <span class="cmdref">help</span> for the rest, or press <span class="cmdref">Tab</span>.';
+  history.appendChild(note);
+
+  live.appendChild(input);
+  input.focus({ preventScroll: true });
+  caret.classList.toggle("off", document.activeElement !== input);
+})();
+</script>
+
+</body>
+</html>
