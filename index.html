@@ -286,7 +286,7 @@
       <div class="lights" aria-hidden="true">
         <span class="light r"></span><span class="light y"></span><span class="light g"></span>
       </div>
-      <div class="titletext">dingpu@ntu — zsh — 88×26</div>
+      <div class="titletext" id="titletext">dingpu@ntu — zsh</div>
       <div class="titlespacer" aria-hidden="true"></div>
     </div>
 
@@ -657,6 +657,35 @@
   var caret   = document.getElementById("caret");
   var live    = document.getElementById("liveline");
   var hints   = document.getElementById("hints");
+  var titleEl = document.getElementById("titletext");
+
+  /* The titlebar reports the window's real size in characters, the way a
+     terminal does — measured, not hard-coded, since the window now resizes. */
+  function reportSize() {
+    var probe = document.createElement("span");
+    probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;top:0;left:0";
+    probe.textContent = new Array(101).join("0");
+    screen.appendChild(probe);
+    var cw = probe.getBoundingClientRect().width / 100;
+    screen.removeChild(probe);
+
+    var cs = getComputedStyle(screen);
+    var lh = parseFloat(cs.lineHeight);
+    if (!cw || !lh) return;
+
+    var w = screen.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var h = screen.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    var cols = Math.max(1, Math.floor(w / cw));
+    var rows = Math.max(1, Math.floor(h / lh));
+    titleEl.textContent = "dingpu@ntu — zsh — " + cols + "\u00d7" + rows;
+  }
+
+  var sizeTick = 0;
+  function queueSize() {
+    cancelAnimationFrame(sizeTick);
+    sizeTick = requestAnimationFrame(reportSize);
+  }
+  window.addEventListener("resize", queueSize);
 
   var past = [];
   var cursor = -1;
@@ -805,6 +834,8 @@
   applyPhosphor();
 
   boot(false);
+  reportSize();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(reportSize);
 
   live.appendChild(input);
   input.focus({ preventScroll: true });
