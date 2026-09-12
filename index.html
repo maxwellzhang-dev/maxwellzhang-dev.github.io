@@ -26,31 +26,68 @@
 <style>
   /* Deliberately single-theme: this page is a terminal window, and a terminal
      that flips to a light ground stops being the thing it is. Every colour is
-     painted explicitly so the page holds on either host background. */
+     painted explicitly so the page holds on either host background.
+     `theme` switches phosphor, not light/dark. */
   :root {
     --bg-page:    #0b0c11;
     --bg-win:     #14151d;
     --bg-chrome:  #1e202b;
+    --bg-tag:     #1d1f2a;
     --rule:       #2b2e3c;
     --fg:         #d6d3c9;
     --dim:        #797e94;
     --dimmer:     #565b6e;
-    --amber:      #e6a244;
-    --cyan:       #6cc0cf;
-    --green:      #93c27a;
-    --violet:     #b48ad6;
-    --rose:       #d97f7f;
+    --accent:     #e6a244;
+    --key:        #6cc0cf;
+    --ok:         #93c27a;
+    --title:      #b48ad6;
+    --err:        #d97f7f;
+    --hit:        #4a3a1c;
 
     --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   }
 
+  /* P1 green phosphor */
+  :root[data-phosphor="green"] {
+    --bg-page:    #070d09;
+    --bg-win:     #0b140e;
+    --bg-chrome:  #101c14;
+    --bg-tag:     #121e16;
+    --rule:       #1f3527;
+    --fg:         #b9e0c4;
+    --dim:        #5f8a6d;
+    --dimmer:     #486a53;
+    --accent:     #63dd85;
+    --key:        #86c9a0;
+    --ok:         #63dd85;
+    --title:      #9adfb2;
+    --err:        #d98080;
+    --hit:        #1d3d28;
+  }
+
+  /* P3 amber phosphor */
+  :root[data-phosphor="amber"] {
+    --bg-page:    #0d0904;
+    --bg-win:     #150f07;
+    --bg-chrome:  #1e150a;
+    --bg-tag:     #20170c;
+    --rule:       #3a2a14;
+    --fg:         #e8d3a4;
+    --dim:        #93794c;
+    --dimmer:     #715c39;
+    --accent:     #ffb638;
+    --key:        #d8ad63;
+    --ok:         #c9a44f;
+    --title:      #f0c777;
+    --err:        #e08a6a;
+    --hit:        #4a3312;
+  }
+
   html { background: var(--bg-page); }
 
   body {
-    background:
-      radial-gradient(1100px 620px at 50% -12%, #1a1c28 0%, rgba(26,28,40,0) 62%),
-      var(--bg-page);
+    background: var(--bg-page);
     color: var(--fg);
     font-family: var(--mono);
     font-size: 14px;
@@ -73,7 +110,7 @@
 
   .titlebar {
     display: flex; align-items: center; gap: 10px;
-    background: linear-gradient(180deg, #23253100 0%, #00000022 100%), var(--bg-chrome);
+    background: var(--bg-chrome);
     border-bottom: 1px solid var(--rule);
     padding: 9px 13px;
   }
@@ -109,22 +146,22 @@
 
   /* ---- prompt ---- */
   .cmdline { display: flex; flex-wrap: wrap; gap: 0 .55ch; }
-  .ps1 { color: var(--green); white-space: nowrap; }
-  .ps1 .path { color: var(--cyan); }
+  .ps1 { color: var(--ok); white-space: nowrap; }
+  .ps1 .path { color: var(--key); }
   .ps1 .sig  { color: var(--dim); }
   .typed { color: var(--fg); word-break: break-word; }
 
   .out { margin-top: 5px; }
 
   /* key : value grid */
-  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 1px 1.4ch; }
-  .kv dt { color: var(--cyan); }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 1px 1.4ch; margin: 0; }
+  .kv dt { color: var(--key); }
   .kv dd { margin: 0; color: var(--fg); }
   .kv dd .sub { color: var(--dim); display: block; }
 
   h2.head {
     font: 500 14px/1.65 var(--mono);
-    color: var(--amber);
+    color: var(--accent);
     margin: 0 0 2px;
   }
   h2.head + .meta { color: var(--dim); margin: 0 0 8px; }
@@ -134,28 +171,50 @@
 
   ul.bul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
   ul.bul li { padding-left: 2.2ch; position: relative; color: var(--fg); }
-  ul.bul li::before { content: "›"; position: absolute; left: 0; color: var(--amber); }
-  ul.bul li .t { color: var(--violet); }
+  ul.bul li::before { content: "›"; position: absolute; left: 0; color: var(--accent); }
+  ul.bul li .t { color: var(--title); }
 
   .tags { display: flex; flex-wrap: wrap; gap: 5px 6px; margin-top: 3px; }
   .tag {
     font-size: 12.5px; color: var(--fg);
-    background: #1d1f2a; border: 1px solid var(--rule);
+    background: var(--bg-tag); border: 1px solid var(--rule);
     border-radius: 4px; padding: 1px 7px;
   }
 
-  a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid #6cc0cf55; }
-  a:hover { border-bottom-color: var(--cyan); }
-  a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 2px; }
+  a { color: var(--key); text-decoration: none; border-bottom: 1px solid currentColor; opacity: 1; }
+  a:hover { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
   .dim { color: var(--dim); }
-  .amber { color: var(--amber); }
-  .green { color: var(--green); }
-  .rose  { color: var(--rose); }
-  .cmdref { color: var(--amber); }
+  .accent { color: var(--accent); }
+  .ok { color: var(--ok); }
+  .err  { color: var(--err); }
+  .cmdref { color: var(--accent); }
 
-  /* wide content never pushes the page sideways */
   .scrollx { overflow-x: auto; }
+
+  /* ---- neofetch ---- */
+  .fetch { display: flex; gap: 2.5ch; align-items: flex-start; flex-wrap: wrap; }
+  .fetch pre {
+    margin: 0; color: var(--accent);
+    font-family: var(--mono); font-size: 13px; line-height: 1.2;
+  }
+  .fetch .info { min-width: 0; }
+
+  /* ---- timeline ---- */
+  pre.tl {
+    margin: 0; font-family: var(--mono); font-size: 13.5px; line-height: 1.55;
+    color: var(--fg); overflow-x: auto;
+  }
+  pre.tl b { color: var(--accent); font-weight: 400; }
+  pre.tl i { color: var(--dim); font-style: normal; }
+  pre.tl u { color: var(--title); text-decoration: none; }
+
+  /* ---- grep ---- */
+  .gr { display: flex; flex-direction: column; gap: 2px; }
+  .gr .fname { color: var(--key); }
+  .gr .ln { color: var(--dimmer); }
+  .gr mark { background: var(--hit); color: var(--accent); border-radius: 2px; padding: 0 1px; }
 
   /* ---- live input line ---- */
   .live { display: flex; flex-wrap: wrap; gap: 0 .55ch; align-items: baseline; }
@@ -166,7 +225,7 @@
   #mirror { color: var(--fg); word-break: break-word; white-space: pre-wrap; }
   .caret {
     display: inline-block; width: 1ch; height: 1.1em;
-    background: var(--amber); vertical-align: text-bottom;
+    background: var(--accent); vertical-align: text-bottom;
     animation: blink 1.15s steps(1) infinite;
   }
   .caret.off { animation: none; background: transparent; box-shadow: inset 0 0 0 1px var(--dim); }
@@ -181,8 +240,8 @@
     border-radius: 5px; padding: 3px 9px; cursor: pointer;
     transition: color .12s ease, border-color .12s ease;
   }
-  button.chip:hover { color: var(--amber); border-color: #4a4436; }
-  button.chip:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.chip:hover { color: var(--accent); border-color: var(--dimmer); }
+  button.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) {
     .caret { animation: none; }
@@ -193,8 +252,9 @@
     body { font-size: 13px; }
     .screen { height: 72vh; }
     .kv { grid-template-columns: 1fr; gap: 0; }
-    .kv dt { color: var(--cyan); margin-top: 7px; }
+    .kv dt { color: var(--key); margin-top: 7px; }
     .kv dt:first-child { margin-top: 0; }
+    .fetch pre { font-size: 11px; }
   }
 </style>
 
@@ -220,25 +280,26 @@
     </div>
   </div>
 
-  <div class="hints">
-    <span class="lead">Try:</span>
-    <button class="chip" data-cmd="help">help</button>
-    <button class="chip" data-cmd="experience">experience</button>
-    <button class="chip" data-cmd="skills">skills</button>
-    <button class="chip" data-cmd="projects">projects</button>
-    <button class="chip" data-cmd="contact">contact</button>
-  </div>
+  <div class="hints" id="hints"></div>
 </div>
 
 <script>
 (function () {
   "use strict";
 
-  var GH = "https://github.com/maxwellzhang-dev";
-  var LI = "https://www.linkedin.com/in/dingpu-z-64b8b41a5/";
+  var GH   = "https://github.com/maxwellzhang-dev";
+  var LI   = "https://www.linkedin.com/in/dingpu-z-64b8b41a5/";
   var MAIL = "dingpu001@e.ntu.edu.sg";
 
-  var FILES = ["about.txt", "experience.md", "education.md", "skills.md", "projects.md", "contact.md"];
+  var LANG = "en";
+  var PHOS = "default";
+
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function recall(k)   { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  function L(en, zh) { return LANG === "zh" ? zh : en; }
+
+  /* ---------- render helpers ---------- */
 
   function kv(rows) {
     return '<dl class="kv">' + rows.map(function (r) {
@@ -252,113 +313,320 @@
       '<ul class="bul">' + bullets.map(function (b) { return "<li>" + b + "</li>"; }).join("") + "</ul></div>";
   }
 
-  function tags(label, items) {
+  function tagged(label, items) {
     return '<div class="entry"><h2 class="head">' + label + "</h2>" +
       '<div class="tags">' + items.map(function (t) { return '<span class="tag">' + t + "</span>"; }).join("") + "</div></div>";
   }
 
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* ---------- content ---------- */
+
   var CMD = {};
 
   CMD.whoami = function () {
-    return '<div class="amber">Zhang Dingpu &nbsp;张鼎溥</div>' +
-           '<div class="dim">AI Engineer · Singapore</div>';
+    return '<div class="accent">Zhang Dingpu &nbsp;张鼎溥</div>' +
+           '<div class="dim">' + L("AI Engineer · Singapore", "AI Engineer · 新加坡") + "</div>";
   };
 
-  CMD["about.txt"] = CMD.about = function () {
+  CMD.about = function () {
     return kv([
-      ["role", "AI Engineer"],
-      ["now", 'AI Engineer Intern @ Mediacorp <span class="dim">— Singapore</span>'],
-      ["studying", 'M.Comp in Applied AI, NTU <span class="dim">— graduating Jul 2027</span>'],
-      ["before", 'four years in product management, then the pivot<span class="sub">BSc Chinese Pharmacy, Nanjing Agricultural University</span>'],
-      ["builds", 'agents, RAG, post-training, evaluation'],
-      ["believes", '<span class="amber">“There are no solutions, there are only trade-offs; and you try to get the best trade-off you can get, that’s all you can hope for.”</span><span class="sub">— Thomas Sowell</span>'],
-      ["available", 'full-time from Jul 2027<span class="sub">internships from Oct 2026</span>'],
-      ["status", '<span class="green">open to opportunities</span>']
+      [L("role", "身份"), "AI Engineer"],
+      [L("now", "现在"), L('AI Engineer Intern @ Mediacorp <span class="dim">— Singapore</span>',
+                           '新传媒 (Mediacorp) AI Engineer 实习 <span class="dim">— 新加坡</span>')],
+      [L("studying", "在读"), L('M.Comp in Applied AI, NTU <span class="dim">— graduating Jul 2027</span>',
+                                '南洋理工大学 计算机硕士（应用人工智能方向）<span class="dim">— 2027 年 7 月毕业</span>')],
+      [L("before", "此前"), L('four years in product management, then the pivot<span class="sub">BSc Chinese Pharmacy, Nanjing Agricultural University</span>',
+                              '四年产品经理，然后转向 AI<span class="sub">南京农业大学 中药学 本科</span>')],
+      [L("builds", "在做"), L("agents, RAG, post-training, evaluation", "agent、RAG、post-training、评测")],
+      [L("believes", "相信"), L('<span class="accent">“There are no solutions, there are only trade-offs; and you try to get the best trade-off you can get, that’s all you can hope for.”</span><span class="sub">— Thomas Sowell</span>',
+                                '<span class="accent">「没有解决方案，只有取舍；你只能尽力争取最好的那个取舍，仅此而已。」</span><span class="sub">— Thomas Sowell</span>')],
+      [L("available", "可加入"), L('full-time from Jul 2027<span class="sub">internships from Oct 2026</span>',
+                                   '2027 年 7 月起可全职<span class="sub">实习自 2026 年 10 月起</span>')],
+      [L("status", "状态"), '<span class="ok">' + L("open to opportunities", "开放机会中") + "</span>"]
     ]);
   };
 
-  CMD["experience.md"] = CMD.experience = CMD.work = function () {
+  CMD.experience = function () {
     return entry(
-      "Mediacorp — AI Products &amp; Solutions",
-      "AI Engineer Intern · Singapore · Apr 2026 – Sep 2026",
+      L("Mediacorp — AI Products &amp; Solutions", "新传媒 Mediacorp — AI Products &amp; Solutions"),
+      L("AI Engineer Intern · Singapore · Apr 2026 – Sep 2026",
+        "AI Engineer 实习 · 新加坡 · 2026 年 4 月 – 2026 年 9 月"),
       [
-        '<span class="t">Content Compliance Agent</span> — hybrid graph-vector retrieval (LightRAG + Azure OpenAI) for AIGC and ad review, with multi-signal confidence scoring that routes low-confidence answers to a human.',
-        '<span class="t">Multi-brand headline generation</span> — built a versioned prompt framework for a shared newsroom service; structured output with schema validation, tuned against an LLM-as-a-judge harness.',
-        '<span class="t">Singapore Chinese dialect TTS</span> — fine-tuned a TTS model for Hainanese, a language the base model does not support, and built the four-metric evaluation harness the team now uses as standard.',
-        '<span class="t">Multi-Version Content Generator</span> — serverless FastAPI service where generation, schema and rendering are decoupled, so web, TV, radio and social share one draft-to-language-check pipeline.'
+        L('<span class="t">Content Compliance Agent</span> — hybrid graph-vector retrieval (LightRAG + Azure OpenAI) for AIGC and ad review, with multi-signal confidence scoring that routes low-confidence answers to a human.',
+          '<span class="t">内容合规 Agent</span> — 基于 LightRAG + Azure OpenAI 的 AIGC 内容与广告审查服务，将异构合规文档解析为文本块、实体与关系，实现图谱—向量混合检索；多信号置信度框架自动把低置信度输出路由至人工复核。'),
+        L('<span class="t">Multi-brand headline generation</span> — built a versioned prompt framework for a shared newsroom service; structured output with schema validation, tuned against an LLM-as-a-judge harness.',
+          '<span class="t">多品牌标题与导语生成</span> — 为共用的标题生成服务构建版本化 Prompt 框架，封装各品牌的语感与事实性护栏；结构化输出经 Pydantic 强制校验，并以 LLM-as-a-judge 流水线持续调优。'),
+        L('<span class="t">Singapore Chinese dialect TTS</span> — fine-tuned a TTS model for Hainanese, a language the base model does not support, and built the four-metric evaluation harness the team now uses as standard.',
+          '<span class="t">新加坡华语方言 TTS</span> — 针对基座模型官方未支持的海南话完成微调，并面向缺乏生产级 ASR 的方言场景设计四项指标的评测框架，已被团队采纳为标准流程。'),
+        L('<span class="t">Multi-Version Content Generator</span> — serverless FastAPI service where generation, schema and rendering are decoupled, so web, TV, radio and social share one draft-to-language-check pipeline.',
+          '<span class="t">多版本内容生成服务</span> — 基于 FastAPI 的 Serverless 服务，「生成、Schema、渲染」三层解耦，使 Web、TV、Radio、Social 四种渠道格式复用同一条「草稿生成 → 语病检查」链路。')
       ]
     ) + entry(
-      "Shenzhen Perfect Information Technology",
-      "Product Manager → AI Engineer · Jul 2021 – Oct 2025",
+      L("Shenzhen Perfect Information Technology", "深圳普菲特信息科技"),
+      L("Product Manager → AI Engineer · Jul 2021 – Oct 2025",
+        "产品经理 → AI Engineer · 2021 年 7 月 – 2025 年 10 月"),
       [
-        '<span class="t">Medical agent for chronic disease care</span> — led the team building a patient ↔ agent ↔ clinician loop: multimodal intake, cross-session patient memory, and a three-layer clinical knowledge pipeline where hard medication-safety rules short-circuit the model and escalate red flags.',
-        '<span class="t">Enterprise AI automation</span> — LLM-assisted triage for ITSM and SAP tickets.',
-        '<span class="t">Platform delivery</span> — HRMS, CRM, recruitment and SRM systems end to end, plus an intelligent digital factory for a leading optical manufacturer, discovery to go-live.'
+        L('<span class="t">Medical agent for chronic disease care</span> — led the team building a patient ↔ agent ↔ clinician loop: multimodal intake, cross-session patient memory, and a three-layer clinical knowledge pipeline where hard medication-safety rules short-circuit the model and escalate red flags.',
+          '<span class="t">慢病管理医疗 Agent</span> — 主导团队完成「患者 ↔ Agent ↔ 医生」闭环：多模态问诊、跨会话患者记忆，以及三层临床知识融合管线——用药安全硬规则优先于模型输出，高危场景被拦截并记录 red-flag 上报医生。'),
+        L('<span class="t">Enterprise AI automation</span> — LLM-assisted triage for ITSM and SAP tickets.',
+          '<span class="t">企业 AI 自动化</span> — ITSM 与 SAP 运维工单的大模型辅助分析与分流。'),
+        L('<span class="t">Platform delivery</span> — HRMS, CRM, recruitment and SRM systems end to end, plus an intelligent digital factory for a leading optical manufacturer, discovery to go-live.',
+          '<span class="t">平台交付</span> — HRMS、CRM、招聘、SRM 等企业内部平台从需求到上线的全流程；并主导某光学行业龙头企业的智能数字工厂项目，从需求调研到上线。')
       ]
     );
   };
 
-  CMD["education.md"] = CMD.education = function () {
-    return entry("Nanyang Technological University", "Master of Computing in Applied AI · Singapore · Nov 2025 – Jul 2027", [
-      "Agentic AI, LLMs &amp; RAG, reinforcement learning, deep learning, NLP, AI ethics and governance, human-AI interaction."
-    ]) + entry("Nanjing Agricultural University", "BSc Chinese Pharmacy · Nanjing · 2017 – 2021", [
-      'Thesis in network pharmacology <span class="dim">— compound-target-disease networks, enrichment analysis, molecular docking.</span>',
-      'Named an <span class="t">Outstanding Graduation Thesis</span>, one of two in the major.'
-    ]);
+  CMD.education = function () {
+    return entry(
+      L("Nanyang Technological University", "南洋理工大学"),
+      L("Master of Computing in Applied AI · Singapore · Nov 2025 – Jul 2027",
+        "计算机硕士（应用人工智能方向）· 新加坡 · 2025 年 11 月 – 2027 年 7 月"),
+      [L("Agentic AI, LLMs &amp; RAG, reinforcement learning, deep learning, NLP, AI ethics and governance, human-AI interaction.",
+         "智能体 AI 与应用、大语言模型与 RAG、强化学习、深度学习、自然语言处理、AI 伦理与治理、人机交互。")]
+    ) + entry(
+      L("Nanjing Agricultural University", "南京农业大学"),
+      L("BSc Chinese Pharmacy · Nanjing · 2017 – 2021", "中药学 本科 · 南京 · 2017 – 2021"),
+      [
+        L('Thesis in network pharmacology <span class="dim">— compound-target-disease networks, enrichment analysis, molecular docking.</span>',
+          '毕业论文方向为网络药理学 <span class="dim">— 化合物–靶点–疾病网络、通路富集分析、分子对接。</span>'),
+        L('Named an <span class="t">Outstanding Graduation Thesis</span>, one of two in the major.',
+          '获<span class="t">校级优秀毕业论文</span>，全专业仅 2 人。')
+      ]
+    );
   };
 
-  CMD["skills.md"] = CMD.skills = function () {
-    return tags("core", ["Python", "LLM application engineering", "Agents", "RAG", "Prompt systems", "Evaluation design"]) +
-      tags("frameworks", ["OpenAI SDK", "LangChain", "LangGraph", "MCP", "DSPy", "PyTorch", "FastAPI"]) +
-      tags("retrieval &amp; data", ["GraphRAG", "FAISS", "Milvus", "Neo4j / Cypher", "SQL", "Redis"]) +
-      tags("platform", ["Azure AI Foundry", "Azure Functions", "AWS", "Docker", "Kubernetes", "Linux", "Git"]) +
-      tags("also", ["Claude Code", "SFT / fine-tuning", "TTS &amp; speech", "LLM-as-a-judge harnesses"]);
+  CMD.skills = function () {
+    return tagged(L("core", "核心"),
+        [L("Python", "Python"), L("LLM application engineering", "大模型应用工程"), L("Agents", "Agent"),
+         "RAG", L("Prompt systems", "Prompt 系统"), L("Evaluation design", "评测体系设计")]) +
+      tagged(L("frameworks", "框架"),
+        ["OpenAI SDK", "LangChain", "LangGraph", "MCP", "DSPy", "PyTorch", "FastAPI"]) +
+      tagged(L("retrieval &amp; data", "检索与数据"),
+        ["GraphRAG", "FAISS", "Milvus", "Neo4j / Cypher", "SQL", "Redis"]) +
+      tagged(L("platform", "平台"),
+        ["Azure AI Foundry", "Azure Functions", "AWS", "Docker", "Kubernetes", "Linux", "Git"]) +
+      tagged(L("also", "其他"),
+        ["Claude Code", L("SFT / fine-tuning", "SFT / 模型微调"), L("TTS &amp; speech", "TTS 与语音"),
+         L("LLM-as-a-judge harnesses", "LLM-as-a-judge 评测")]);
   };
 
-  CMD["projects.md"] = CMD.projects = function () {
-    return entry("medical-agent-prototype", "TypeScript · public", [
-      'An independent reimplementation of the clinical-agent architecture: intake, memory, and a rules-before-model safety layer. <a href="' + GH + '" target="_blank" rel="noopener">github.com/maxwellzhang-dev</a>'
-    ]) + '<p class="dim">Most of the rest is employer work and lives behind an NDA. Ask me about it — the architecture travels even when the code does not.</p>';
+  CMD.projects = function () {
+    return entry("medical-agent-prototype", L("TypeScript · public", "TypeScript · 公开"), [
+      L('An independent reimplementation of the clinical-agent architecture: intake, memory, and a rules-before-model safety layer. <a href="' + GH + '" target="_blank" rel="noopener">github.com/maxwellzhang-dev</a>',
+        '独立重写的临床 Agent 架构：问诊、记忆，以及「规则先于模型」的安全层。<a href="' + GH + '" target="_blank" rel="noopener">github.com/maxwellzhang-dev</a>')
+    ]) + '<p class="dim">' +
+      L("Most of the rest is employer work and lives behind an NDA. Ask me about it — the architecture travels even when the code does not.",
+        "其余多为雇主项目，受保密约定限制。架构可以聊，代码不能给。") + "</p>";
   };
 
-  CMD["contact.md"] = CMD.contact = function () {
+  CMD.contact = function () {
     return kv([
-      ["email", '<a href="mailto:' + MAIL + '">' + MAIL + "</a>"],
-      ["linkedin", '<a href="' + LI + '" target="_blank" rel="noopener">dingpu-z</a>'],
+      [L("email", "邮箱"), '<a href="mailto:' + MAIL + '">' + MAIL + "</a>"],
+      [L("linkedin", "领英"), '<a href="' + LI + '" target="_blank" rel="noopener">dingpu-z</a>'],
       ["github", '<a href="' + GH + '" target="_blank" rel="noopener">maxwellzhang-dev</a>'],
-      ["based in", 'Singapore <span class="dim">— open to Shanghai, Shenzhen, Beijing</span>'],
-      ["languages", "Mandarin (native) · English (fluent)"]
+      [L("based in", "所在地"), L('Singapore <span class="dim">— open to Shanghai, Shenzhen, Beijing</span>',
+                                  '新加坡 <span class="dim">— 可去上海、深圳、北京</span>')],
+      [L("languages", "语言"), L("Mandarin (native) · English (fluent)", "中文（母语）· 英文（流利）")]
     ]);
   };
+
+  /* ---------- timeline ---------- */
+
+  var TL_EN = [
+    ["2017", "─┬─", "<u>BSc Chinese Pharmacy</u>", "Nanjing Agricultural University"],
+    ["2020", " ├─", "<u>undergraduate research assistant</u>", "compound–target–disease networks, Python"],
+    ["2021", " ├─", "<u>Shenzhen Perfect Information Technology</u>", "product manager → AI engineer"],
+    ["",     " │ ", "", "enterprise platforms, then a medical agent"],
+    ["2025", " ├─", "<u>M.Comp in Applied AI</u>", "Nanyang Technological University"],
+    ["2026", " ├─", "<u>Mediacorp · AI Products &amp; Solutions</u>", "compliance agent · dialect TTS · content generation"],
+    ["2027", " └─", "<u>graduating July</u>", "open to full-time roles"]
+  ];
+  var TL_ZH = [
+    ["2017", "─┬─", "<u>中药学 本科</u>", "南京农业大学"],
+    ["2020", " ├─", "<u>本科科研助理</u>", "化合物–靶点–疾病网络，Python"],
+    ["2021", " ├─", "<u>深圳普菲特信息科技</u>", "产品经理 → AI Engineer"],
+    ["",     " │ ", "", "企业内部平台，之后是慢病医疗 Agent"],
+    ["2025", " ├─", "<u>计算机硕士（应用人工智能）</u>", "南洋理工大学"],
+    ["2026", " ├─", "<u>新传媒 · AI Products &amp; Solutions</u>", "合规 Agent · 方言 TTS · 内容生成"],
+    ["2027", " └─", "<u>7 月毕业</u>", "开放全职机会"]
+  ];
+
+  CMD.timeline = function () {
+    var rows = LANG === "zh" ? TL_ZH : TL_EN;
+    var out = rows.map(function (r) {
+      var year = r[0] ? "<b>" + r[0] + "</b>" : "    ";
+      var head = r[2] ? year + " " + r[1] + " " + r[2] : year + " " + r[1];
+      var sub  = r[3] ? "\n     " + r[1].replace(/[─┬├└]/g, " ").replace(/\s+$/, " │ ") + " <i>" + r[3] + "</i>" : "";
+      return head + sub;
+    }).join("\n");
+    return '<pre class="tl">' + out + "</pre>";
+  };
+
+  /* ---------- neofetch ---------- */
+
+  var ART = [
+    "  ┌────────────────┐",
+    "  │                │",
+    "  │   ██           │",
+    "  │     ██         │",
+    "  │   ██           │",
+    "  │                │",
+    "  │   ████         │",
+    "  │                │",
+    "  └────────────────┘"
+  ].join("\n");
+
+  CMD.neofetch = function () {
+    var rows = [
+      ["OS",     L("macOS · zsh", "macOS · zsh")],
+      ["Host",   L("Singapore", "新加坡")],
+      ["Kernel", "Python 3.12"],
+      ["Uptime", L("5 yrs in tech", "入行 5 年")],
+      ["Editor", "Claude Code"],
+      ["Stack",  L("agents · RAG · post-training · eval", "agent · RAG · post-training · 评测")],
+      ["Memory", L("pharmacy → product → AI", "药学 → 产品 → AI")],
+      ["Status", '<span class="ok">' + L("open to opportunities", "开放机会中") + "</span>"]
+    ];
+    return '<div class="fetch"><pre aria-hidden="true">' + ART + "</pre>" +
+      '<div class="info"><div class="accent">dingpu@ntu</div>' +
+      '<div class="dim">──────────────────</div>' + kv(rows) + "</div></div>";
+  };
+
+  /* ---------- files, grep, help ---------- */
+
+  var FILES = [
+    ["about.txt",     "about"],
+    ["experience.md", "experience"],
+    ["education.md",  "education"],
+    ["skills.md",     "skills"],
+    ["projects.md",   "projects"],
+    ["contact.md",    "contact"]
+  ];
 
   CMD.ls = function () {
     return '<div class="scrollx">' + FILES.map(function (f) {
-      return '<span class="cmdref">' + f + "</span>";
+      return '<span class="cmdref">' + f[0] + "</span>";
     }).join("&nbsp;&nbsp;") + "</div>";
   };
 
+  function each(list, fn) { Array.prototype.forEach.call(list, fn); }
+
+  // Build grep's corpus from what the commands actually render, so the index
+  // can never drift from the page.
+  function corpus() {
+    var lines = [];
+    FILES.forEach(function (f) {
+      var box = document.createElement("div");
+      box.innerHTML = CMD[f[1]]();
+      var local = [];
+      each(box.querySelectorAll("dl.kv"), function (dl) {
+        var dts = dl.querySelectorAll("dt"), dds = dl.querySelectorAll("dd");
+        for (var i = 0; i < dts.length; i++) {
+          local.push(dts[i].textContent.trim() + ": " + (dds[i] ? dds[i].textContent.trim() : ""));
+        }
+      });
+      each(box.querySelectorAll(".entry"), function (e) {
+        var h = e.querySelector("h2"), m = e.querySelector(".meta");
+        if (h) local.push(h.textContent.trim() + (m ? " — " + m.textContent.trim() : ""));
+        each(e.querySelectorAll("li"), function (li) { local.push(li.textContent.trim()); });
+        var tg = e.querySelectorAll(".tag");
+        if (tg.length) local.push(Array.prototype.map.call(tg, function (t) { return t.textContent.trim(); }).join(", "));
+      });
+      each(box.children, function (c) {
+        if (c.tagName === "P") local.push(c.textContent.trim());
+      });
+      local.forEach(function (t, i) {
+        if (t) lines.push([f[0], i + 1, t.replace(/\s+/g, " ")]);
+      });
+    });
+    return lines;
+  }
+
+  function grep(term) {
+    if (!term) {
+      return '<span class="dim">' + L("usage: grep &lt;term&gt;", "用法：grep &lt;关键词&gt;") + "</span>";
+    }
+    var needle = term.toLowerCase();
+    var hits = corpus().filter(function (r) { return r[2].toLowerCase().indexOf(needle) !== -1; });
+    if (!hits.length) {
+      return '<span class="err">grep: ' + L("no match for ", "未匹配到 ") + '“' + esc(term) + '”</span>';
+    }
+    var re = new RegExp("(" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig");
+    var rows = hits.slice(0, 24).map(function (r) {
+      var text = esc(r[2]).replace(re, "<mark>$1</mark>");
+      return '<div><span class="fname">' + r[0] + '</span><span class="ln">:' + r[1] + ':</span> ' + text + "</div>";
+    }).join("");
+    var more = hits.length > 24
+      ? '<div class="dim">' + L("… and " + (hits.length - 24) + " more", "… 另有 " + (hits.length - 24) + " 条") + "</div>"
+      : "";
+    return '<div class="gr">' + rows + more + "</div>";
+  }
+
   CMD.help = function () {
     return kv([
-      ["whoami", '<span class="dim">the short version</span>'],
-      ["about", '<span class="dim">the slightly longer version</span>'],
-      ["experience", '<span class="dim">what I have built and where</span>'],
-      ["education", '<span class="dim">pharmacy, then computing</span>'],
-      ["skills", '<span class="dim">tools I actually use</span>'],
-      ["projects", '<span class="dim">what is public</span>'],
-      ["contact", '<span class="dim">how to reach me</span>'],
-      ["ls", '<span class="dim">list files</span>'],
-      ["clear", '<span class="dim">clear the screen</span>']
-    ]) + '<p class="dim" style="margin:8px 0 0">Tab completes. ↑ and ↓ walk the history.</p>';
+      ["whoami",     '<span class="dim">' + L("the short version", "一句话版本") + "</span>"],
+      ["about",      '<span class="dim">' + L("the slightly longer version", "稍长一点的版本") + "</span>"],
+      ["experience", '<span class="dim">' + L("what I have built and where", "做过什么，在哪里做的") + "</span>"],
+      ["education",  '<span class="dim">' + L("pharmacy, then computing", "药学，然后是计算机") + "</span>"],
+      ["skills",     '<span class="dim">' + L("tools I actually use", "真正在用的工具") + "</span>"],
+      ["projects",   '<span class="dim">' + L("what is public", "公开的部分") + "</span>"],
+      ["contact",    '<span class="dim">' + L("how to reach me", "怎么找到我") + "</span>"],
+      ["timeline",   '<span class="dim">' + L("the arc, drawn out", "职业轨迹") + "</span>"],
+      ["neofetch",   '<span class="dim">' + L("the obligatory one", "该有的那个") + "</span>"],
+      ["grep &lt;term&gt;", '<span class="dim">' + L("search everything above", "在全部内容里搜索") + "</span>"],
+      ["theme",      '<span class="dim">' + L("default · green · amber", "default · green · amber") + "</span>"],
+      [L("zh", "en"), '<span class="dim">' + L("切换到中文", "switch to English") + "</span>"],
+      ["ls",         '<span class="dim">' + L("list files", "列出文件") + "</span>"],
+      ["clear",      '<span class="dim">' + L("clear the screen", "清屏") + "</span>"]
+    ]) + '<p class="dim" style="margin:8px 0 0">' +
+      L("Tab completes. ↑ and ↓ walk the history.", "Tab 补全，↑ ↓ 翻历史命令。") + "</p>";
   };
 
   CMD.sudo = function () {
-    return '<span class="rose">dingpu is not in the sudoers file.</span> ' +
-           '<span class="dim">This incident will be reported.</span>';
+    return '<span class="err">' + L("dingpu is not in the sudoers file.", "dingpu 不在 sudoers 文件中。") +
+           '</span> <span class="dim">' + L("This incident will be reported.", "此事件将被记录。") + "</span>";
   };
 
-  var ALIASES = { cv: "experience", resume: "experience", "cat about.txt": "about", man: "help", "?": "help" };
+  CMD.vim = function () {
+    return '<span class="dim">' + L("To exit vim, close the tab. Works every time.",
+                                    "要退出 vim，关闭这个标签页即可。百试百灵。") + "</span>";
+  };
 
-  var NAMES = ["help", "whoami", "about", "experience", "education", "skills", "projects", "contact", "ls", "clear"];
+  function theme(arg) {
+    var opts = ["default", "green", "amber"];
+    if (!arg) {
+      return kv(opts.map(function (o) {
+        return [o, '<span class="dim">' + (o === PHOS ? L("← current", "← 当前") : "") + "</span>"];
+      })) + '<p class="dim" style="margin:8px 0 0">' + L("usage: theme &lt;name&gt;", "用法：theme &lt;名称&gt;") + "</p>";
+    }
+    if (opts.indexOf(arg) === -1) {
+      return '<span class="err">' + L("theme: unknown theme ", "theme: 未知主题 ") + "“" + esc(arg) + "”</span>";
+    }
+    PHOS = arg;
+    store("phosphor", arg);
+    applyPhosphor();
+    return '<span class="dim">' + L("phosphor set to ", "磷光已切换为 ") + '<span class="accent">' + arg + "</span></span>";
+  }
+
+  function applyPhosphor() {
+    if (PHOS === "default") document.documentElement.removeAttribute("data-phosphor");
+    else document.documentElement.setAttribute("data-phosphor", PHOS);
+  }
+
+  /* ---------- shell ---------- */
+
+  var ALIASES = {
+    cv: "experience", resume: "experience", work: "experience", man: "help", "?": "help",
+    "关于": "about", "经历": "experience", "教育": "education", "技能": "skills",
+    "项目": "projects", "联系": "contact", "帮助": "help", "时间线": "timeline",
+    cn: "zh", "中文": "zh", english: "en"
+  };
+
+  var NAMES = ["help", "whoami", "about", "experience", "education", "skills", "projects",
+               "contact", "timeline", "neofetch", "grep", "theme", "zh", "en", "ls", "clear"];
 
   var screen  = document.getElementById("screen");
   var history = document.getElementById("history");
@@ -366,6 +634,7 @@
   var mirror  = document.getElementById("mirror");
   var caret   = document.getElementById("caret");
   var live    = document.getElementById("liveline");
+  var hints   = document.getElementById("hints");
 
   var past = [];
   var cursor = -1;
@@ -387,30 +656,79 @@
   function resolve(raw) {
     var cmd = raw.trim();
     if (!cmd) return null;
-    var key = cmd.toLowerCase();
 
-    if (key === "clear") { history.innerHTML = ""; return null; }
-    if (ALIASES[key]) key = ALIASES[key];
+    var parts = cmd.split(/\s+/);
+    var head = parts[0].toLowerCase();
+    var rest = parts.slice(1).join(" ");
 
-    if (key.indexOf("cat ") === 0) key = key.slice(4).trim();
-    if (key.indexOf("sudo") === 0) key = "sudo";
+    if (ALIASES[head]) head = ALIASES[head];
+    if (head === "cat" && rest) {
+      var f = FILES.filter(function (x) { return x[0] === rest.toLowerCase(); })[0];
+      if (f) return CMD[f[1]]();
+      return '<span class="err">cat: ' + esc(rest) + ": " + L("No such file", "没有这个文件") + "</span>";
+    }
+    if (head === "grep")  return grep(rest);
+    if (head === "theme") return theme(rest.trim().toLowerCase());
+    if (head === "sudo")  return CMD.sudo();
 
-    var fn = CMD[key];
-    if (fn) return fn();
-    return '<span class="rose">zsh: command not found: ' + cmd.replace(/</g, "&lt;") + "</span>" +
-           '<div class="dim">Type <span class="cmdref">help</span> to see what is here.</div>';
+    if (head === "zh" || head === "en") {
+      LANG = head;
+      store("lang", LANG);
+      boot(true);
+      return null;
+    }
+
+    if (CMD[head]) return CMD[head]();
+
+    return '<span class="err">zsh: ' + L("command not found: ", "未找到命令： ") + esc(cmd) + "</span>" +
+           '<div class="dim">' + L("Type ", "输入 ") + '<span class="cmdref">help</span>' +
+           L(" to see what is here.", " 看看有什么。") + "</div>";
   }
 
   function run(raw) {
     var cmd = raw.trim();
     if (cmd) { past.push(cmd); cursor = past.length; }
-    if (cmd.toLowerCase() === "clear") { history.innerHTML = ""; return; }
-    render(cmd.replace(/</g, "&lt;"), resolve(cmd));
+    var head = cmd.split(/\s+/)[0].toLowerCase();
+    if (head === "clear") { history.innerHTML = ""; return; }
+    var out = resolve(cmd);
+    if (head === "zh" || head === "en" || ALIASES[head] === "zh" || ALIASES[head] === "en") return;
+    render(esc(cmd), out);
   }
 
   function sync() { mirror.textContent = input.value; }
-
   function toBottom() { screen.scrollTop = screen.scrollHeight; }
+
+  /* ---------- chips + boot ---------- */
+
+  var CHIPS = ["help", "experience", "skills", "timeline", "neofetch", "contact"];
+
+  function drawHints() {
+    hints.innerHTML = '<span class="lead">' + L("Try:", "试试：") + "</span>" +
+      CHIPS.map(function (c) { return '<button class="chip" data-cmd="' + c + '">' + c + "</button>"; }).join("") +
+      '<button class="chip" data-cmd="' + L("zh", "en") + '">' + L("中文", "English") + "</button>";
+    each(hints.querySelectorAll("button.chip"), function (b) {
+      b.addEventListener("click", function () {
+        run(b.getAttribute("data-cmd"));
+        toBottom();
+        input.focus();
+      });
+    });
+  }
+
+  function boot(clear) {
+    if (clear) history.innerHTML = "";
+    render("whoami", CMD.whoami());
+    render(L("cat about.txt", "cat about.txt"), CMD.about());
+    var note = document.createElement("div");
+    note.className = "block dim";
+    note.innerHTML = L('Type <span class="cmdref">help</span> for the rest, or press <span class="cmdref">Tab</span>.',
+                       '输入 <span class="cmdref">help</span> 看全部命令，或按 <span class="cmdref">Tab</span> 补全。');
+    history.appendChild(note);
+    drawHints();
+    toBottom();
+  }
+
+  /* ---------- input ---------- */
 
   input.addEventListener("input", sync);
 
@@ -456,21 +774,15 @@
   input.addEventListener("focus", function () { caret.classList.remove("off"); });
   input.addEventListener("blur",  function () { caret.classList.add("off"); });
 
-  Array.prototype.forEach.call(document.querySelectorAll("button.chip"), function (b) {
-    b.addEventListener("click", function () {
-      run(b.getAttribute("data-cmd"));
-      toBottom();
-      input.focus();
-    });
-  });
+  /* ---------- start ---------- */
 
-  // The page at rest already shows who this is: two commands are pre-run.
-  render("whoami", CMD.whoami());
-  render("cat about.txt", CMD.about());
-  var note = document.createElement("div");
-  note.className = "block dim";
-  note.innerHTML = 'Type <span class="cmdref">help</span> for the rest, or press <span class="cmdref">Tab</span>.';
-  history.appendChild(note);
+  var savedLang = recall("lang");
+  if (savedLang === "zh" || savedLang === "en") LANG = savedLang;
+  var savedPhos = recall("phosphor");
+  if (savedPhos === "green" || savedPhos === "amber" || savedPhos === "default") PHOS = savedPhos;
+  applyPhosphor();
+
+  boot(false);
 
   live.appendChild(input);
   input.focus({ preventScroll: true });
