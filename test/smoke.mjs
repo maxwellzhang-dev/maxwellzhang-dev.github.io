@@ -81,7 +81,10 @@ await t('filter alone',async () => /pipe|管道/.test(await type('wc')));
 
 // --- man / history / suggestions ---
 await t('man cmd',     async () => { const o = await type('man grep'); return /SYNOPSIS|用法/.test(o); });
-await t('man index',   async () => (await type('man')).includes('neofetch'));
+await t('man index',   async () => { const o = await type('man'); return o.includes('neofetch') && o.includes('keys'); });
+await t('man keys',    async () => /Ctrl\+L/.test(await type('man keys')));
+await t('man pipes',   async () => /grep RAG/.test(await type('man pipes')));
+await t('help terse',  async () => { const o = await type('help'); return o.includes('whoami') && !/\bpwd\b|\buniq\b/.test(o); });
 await t('man bad',     async () => /No manual|手册页/.test(await type('man zzz')));
 await t('history',     async () => (await type('history')).includes('man grep'));
 await t('did you mean',async () => /Did you mean|想输入/.test(await type('skils')));
@@ -136,7 +139,7 @@ await t('zh experience',async () => (await type('experience')).includes('慢病�
 await t('zh grep',      async () => (await type('grep 评测')).includes('.md'));
 await t('zh bad cmd',   async () => (await type('nope')).includes('zsh:'));
 await t('zh alias',     async () => (await type('经历')).includes('新传媒'));
-await t('zh help',      async () => { const o = await type('help'); return o.includes('简介') && o.includes('neofetch') && !o.includes('稍长一点'); });
+await t('zh help',      async () => { const o = await type('help'); return o.includes('neofetch') && !/\\bls\\b|\\bcd\\b|\\bpwd\\b|\\bhistory\\b/.test(o); });
 await t('en back',      async () => { await type('en'); return /NANYANG/i.test(await type('education')); });
 
 // --- window chrome ---

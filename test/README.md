@@ -12,7 +12,7 @@ npm i playwright && npx playwright install chromium
 node test/smoke.mjs "$PWD/index.html"
 ```
 
-90 checks — boot, every chip, the filesystem commands, grep, completion,
+93 checks — boot, every chip, the filesystem commands, grep, completion,
 history keys, both languages, the window buttons, drag-resize, text selection,
 localStorage persistence across reload, and a 390px viewport. Exits non-zero on
 any failure or any uncaught JS error.

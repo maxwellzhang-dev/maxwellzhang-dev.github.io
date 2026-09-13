@@ -316,8 +316,7 @@
     color: var(--dim); overflow-x: auto;
   }
 
-  .helpgrid dt { color: var(--dim); }
-  .helpgrid dd { line-height: 1.9; }
+  .helprow { display: flex; flex-wrap: wrap; gap: 4px 2.5ch; line-height: 1.9; }
 
   /* ---- pipeline + history output ---- */
   .pipeout { display: flex; flex-direction: column; gap: 1px; }
@@ -1118,6 +1117,12 @@
       history:    ["history",               L("List the commands run this session.", "列出本次会话执行过的命令。")],
       theme:      ["theme [name]",          L("Switch phosphor: default, green or amber. Remembered in this browser.", "切换磷光配色：default、green、amber。记在本浏览器。")],
       man:        ["man <command>",         L("What you are reading.", "你正在读的东西。")],
+      keys:       ["man keys",
+                   L("Tab completes, twice lists. ↑ ↓ walk the history. Ctrl+L clears, Ctrl+C abandons the line, Ctrl+D closes the window, Ctrl+A/E jump to the start or end, Ctrl+U/K kill to it, Ctrl+W kills the previous word.",
+                     "Tab 补全，补不动时列出候选。↑ ↓ 翻历史。Ctrl+L 清屏，Ctrl+C 放弃当前行，Ctrl+D 关闭窗口，Ctrl+A/E 跳行首行尾，Ctrl+U/K 删到行首行尾，Ctrl+W 删前一个词。")],
+      pipes:      ["<command> | <filter>",
+                   L("Feed any command's output into grep, head, tail, sort, uniq or wc. Example: skills | grep RAG",
+                     "把任意命令的输出接给 grep、head、tail、sort、uniq 或 wc。例如：skills | grep RAG")],
       clear:      ["clear",                 L("Clear the screen. Ctrl+L does the same.", "清屏。Ctrl+L 同效。")],
       whoami:     ["whoami",                L("Name and one line.", "姓名和一句话。")],
       about:      ["about",                 L("The longer introduction. Same as cat about.txt.", "稍长的自我介绍。等同于 cat about.txt。")],
@@ -1189,31 +1194,22 @@
 
   /* ---------- help ---------- */
 
-  /* `help` lists what exists; `man` explains it. Keeping descriptions here as
-     well made the two commands do the same job, and meant a screenful of prose
-     that has to be translated twice. */
+  /* `help` lists what this page has to say about him, and nothing else. The
+     shell machinery is discoverable where it matters — the boot line says the
+     tree is real, an engineer types `ls` on instinct, and `man` indexes the
+     lot. Listing it here only buried the seven commands that carry content. */
   CMD.help = function () {
-    function row(label, cmds) {
-      return "<dt>" + label + "</dt><dd>" +
-        cmds.map(function (c) { return '<span class="cmdref">' + c + "</span>"; }).join("&nbsp;&nbsp;") +
-        "</dd>";
+    function row(cmds) {
+      return '<div class="helprow">' + cmds.map(function (c) {
+        return '<span class="cmdref">' + c + "</span>";
+      }).join("") + "</div>";
     }
-    return '<dl class="kv helpgrid">' +
-      row(L("profile", "简介"), ["whoami", "about", "experience", "education", "skills", "projects", "contact"]) +
-      row(L("extras", "其他"),  ["timeline", "neofetch", "theme"]) +
-      row(L("files", "文件"),   ["tree", "ls", "cd", "pwd", "cat", "grep"]) +
-      row(L("filters", "过滤器"), ["grep", "head", "tail", "sort", "uniq", "wc"]) +
-      row(L("shell", "终端"),   ["help", "man", "history", "clear", L("zh", "en")]) +
-      "</dl>" +
+    return row(["whoami", "about", "experience", "education", "skills", "projects", "contact"]) +
+      row(["timeline", "neofetch", "theme", L("zh", "en")]) +
       '<p class="dim" style="margin:10px 0 0">' +
-        "<span class=\"cmdref\">man &lt;command&gt;</span> " +
-        L("for detail &nbsp;·&nbsp; filters run after a pipe: <span class=\"cmdref\">skills | grep RAG</span>",
-          "看详细说明 &nbsp;·&nbsp; 过滤器接在管道后面：<span class=\"cmdref\">skills | grep RAG</span>") +
-      "</p>" +
-      '<p class="dim" style="margin:3px 0 0">' +
-        "<span class=\"cmdref\">Tab</span>&nbsp;&nbsp;<span class=\"cmdref\">↑ ↓</span>&nbsp;&nbsp;" +
-        "<span class=\"cmdref\">Ctrl+L</span>&nbsp;&nbsp;<span class=\"cmdref\">Ctrl+C</span>&nbsp;&nbsp;" +
-        "<span class=\"cmdref\">Ctrl+A/E/U/W</span>" +
+        '<span class="cmdref">man &lt;command&gt;</span>&nbsp;&nbsp;' +
+        '<span class="cmdref">man keys</span>&nbsp;&nbsp;' +
+        '<span class="cmdref">Tab</span>&nbsp;&nbsp;<span class="cmdref">↑ ↓</span>' +
       "</p>";
   };
 
