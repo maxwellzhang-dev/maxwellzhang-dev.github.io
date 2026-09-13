@@ -430,6 +430,8 @@
       '<div class="tags">' + items.map(function (t) { return '<span class="tag">' + t + "</span>"; }).join("") + "</div></div>";
   }
 
+  function each(list, fn) { Array.prototype.forEach.call(list, fn); }
+
   function esc(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
@@ -521,7 +523,8 @@
       {
         file: "ntu.md",
         date: "2027-07",
-        name: L("Nanyang Technological University", "南洋理工大学"),
+        name: L("NANYANG TECHNOLOGICAL UNIVERSITY",
+                "NANYANG TECHNOLOGICAL UNIVERSITY 南洋理工大学"),
         meta: L("Master of Computing in Applied AI | College of Computing and Data Science · Singapore · Nov 2025 – Jul 2027",
                 "计算机硕士（应用人工智能方向）| 计算与数据科学学院 · 新加坡 · 2025 年 11 月 – 2027 年 7 月"),
         items: [
@@ -532,7 +535,8 @@
       {
         file: "nanjing-agricultural.md",
         date: "2021-07",
-        name: L("Nanjing Agricultural University", "南京农业大学"),
+        name: L("NANJING AGRICULTURAL UNIVERSITY",
+                "NANJING AGRICULTURAL UNIVERSITY 南京农业大学"),
         meta: L("B.S. in Chinese Pharmacy · Nanjing · Sep 2017 – Jul 2021",
                 "中药学 本科 · 南京 · 2017 年 9 月 – 2021 年 7 月"),
         items: [
@@ -557,10 +561,10 @@
       [L("role", "身份"), "AI Engineer"],
       [L("now", "现在"), L('AI Engineer Intern @ Mediacorp <span class="dim">— Singapore</span>',
                            '新传媒 (Mediacorp) AI Engineer 实习 <span class="dim">— 新加坡</span>')],
-      [L("studying", "在读"), L('M.Comp in Applied AI, NTU <span class="dim">— graduating Jul 2027</span>',
-                                '南洋理工大学 计算机硕士（应用人工智能方向）<span class="dim">— 2027 年 7 月毕业</span>')],
+      [L("studying", "在读"), L('M.Comp in Applied AI, Nanyang Technological University <span class="dim">— graduating Jul 2027</span>',
+                                'Nanyang Technological University 南洋理工大学，计算机硕士（应用人工智能方向）<span class="dim">— 2027 年 7 月毕业</span>')],
       [L("before", "此前"), L('four years in product management, then the pivot<span class="sub">BSc Chinese Pharmacy, Nanjing Agricultural University</span>',
-                              '四年产品经理，然后转向 AI<span class="sub">南京农业大学 中药学 本科</span>')],
+                              '四年产品经理，然后转向 AI<span class="sub">Nanjing Agricultural University 南京农业大学，中药学 本科</span>')],
       [L("builds", "在做"), L("agents, RAG, post-training, evaluation", "agent、RAG、post-training、评测")],
       [L("believes", "相信"), L('<span class="accent">“There are no solutions, there are only trade-offs; and you try to get the best trade-off you can get, that’s all you can hope for.”</span><span class="sub">— Thomas Sowell</span>',
                                 '<span class="accent">「没有解决方案，只有取舍；你只能尽力争取最好的那个取舍，仅此而已。」</span><span class="sub">— Thomas Sowell</span>')],
@@ -938,11 +942,11 @@
     ["2027", " └─", "<u>graduating July</u>", "open to full-time roles"]
   ];
   var TL_ZH = [
-    ["2017", "─┬─", "<u>中药学 本科</u>", "南京农业大学"],
+    ["2017", "─┬─", "<u>中药学 本科</u>", "Nanjing Agricultural University 南京农业大学"],
     ["2020", " ├─", "<u>本科科研助理</u>", "化合物–靶点–疾病网络，Python"],
     ["2021", " ├─", "<u>深圳普菲特信息科技</u>", "产品经理 → AI Engineer"],
     ["",     " │ ", "", "企业内部平台，之后是慢病医疗 Agent"],
-    ["2025", " ├─", "<u>计算机硕士（应用人工智能）</u>", "南洋理工大学"],
+    ["2025", " ├─", "<u>计算机硕士（应用人工智能）</u>", "Nanyang Technological University 南洋理工大学"],
     ["2026", " ├─", "<u>新传媒 · AI Products &amp; Solutions</u>", "合规 Agent · 方言 TTS · 内容生成"],
     ["2027", " └─", "<u>7 月毕业</u>", "开放全职机会"]
   ];
@@ -1076,6 +1080,155 @@
   var live    = document.getElementById("liveline");
   var hints   = document.getElementById("hints");
   var titleEl = document.getElementById("titletext");
+
+  /* The titlebar reports the window's real size in characters, the way a
+     terminal does — measured, not hard-coded, since the window resizes. */
+  function reportSize() {
+    if (!titleEl) return;
+    var probe = document.createElement("span");
+    probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;top:0;left:0";
+    probe.textContent = new Array(101).join("0");
+    screen.appendChild(probe);
+    var cw = probe.getBoundingClientRect().width / 100;
+    screen.removeChild(probe);
+
+    var cs = getComputedStyle(screen);
+    var lh = parseFloat(cs.lineHeight);
+    if (!cw || !lh) return;
+
+    var w = screen.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var h = screen.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    titleEl.textContent = "dingpu@ntu \u2014 zsh \u2014 " +
+      Math.max(1, Math.floor(w / cw)) + "\u00d7" + Math.max(1, Math.floor(h / lh));
+  }
+
+  var sizeTick = 0;
+  function queueSize() {
+    cancelAnimationFrame(sizeTick);
+    sizeTick = requestAnimationFrame(reportSize);
+  }
+  window.addEventListener("resize", function () { clampFree(); queueSize(); });
+
+  /* ------------------------------------------------------------------
+     Window chrome: the three lights do what they do on macOS, the
+     titlebar drags, and the corner grip resizes.
+
+     Two layouts. "fit" is the default — the window flexes to the
+     viewport. The first drag or resize switches to "free", where the
+     window carries an explicit size and offset like a real one.
+     ------------------------------------------------------------------ */
+
+  var shell    = document.querySelector(".shell");
+  var win      = document.querySelector(".window");
+  var titlebar = document.querySelector(".titlebar");
+  var grip     = document.getElementById("grip");
+
+  var free = false, zoomed = false, mini = false;
+  var fw = 0, fh = 0, tx = 0, ty = 0;
+  var MIN_W = 340, MIN_H = 220;
+
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+  function pad() { return parseFloat(getComputedStyle(document.body).paddingLeft) || 0; }
+
+  function clampFree() {
+    if (!free || zoomed) return;
+    var maxW = window.innerWidth  - pad() * 2;
+    var maxH = window.innerHeight - pad() * 2;
+    fw = clamp(fw, MIN_W, Math.max(MIN_W, maxW));
+    fh = clamp(fh, MIN_H, Math.max(MIN_H, maxH));
+    tx = clamp(tx, -pad(), Math.max(0, maxW - fw + pad()));
+    ty = clamp(ty, -pad(), Math.max(0, maxH - fh + pad()));
+    paint();
+  }
+
+  function paint() {
+    shell.classList.toggle("free", free && !zoomed);
+    shell.classList.toggle("zoomed", zoomed);
+    document.body.classList.toggle("zoomed", zoomed);
+    win.classList.toggle("mini", mini);
+    shell.classList.toggle("mini", mini);
+
+    if (zoomed || !free) {
+      shell.style.width = shell.style.height = shell.style.transform = "";
+    } else {
+      shell.style.width  = fw + "px";
+      shell.style.height = mini ? "" : fh + "px";
+      shell.style.transform = (tx || ty) ? "translate(" + tx + "px," + ty + "px)" : "";
+    }
+    queueSize();
+  }
+
+  function goFree() {
+    if (free) return;
+    var r = shell.getBoundingClientRect();
+    fw = Math.round(r.width);
+    fh = Math.round(r.height);
+    tx = ty = 0;
+    free = true;
+  }
+
+  function drag(handle, onMove, guard) {
+    if (!handle) return;
+    handle.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0) return;
+      if (guard && guard(e)) return;
+      goFree();
+      paint();
+      var sx = e.clientX, sy = e.clientY, w0 = fw, h0 = fh, x0 = tx, y0 = ty;
+      handle.setPointerCapture(e.pointerId);
+      handle.classList.add("dragging");
+
+      function move(ev) { onMove(ev.clientX - sx, ev.clientY - sy, w0, h0, x0, y0); clampFree(); }
+      function stop() {
+        handle.classList.remove("dragging");
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", stop);
+        handle.removeEventListener("pointercancel", stop);
+      }
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", stop);
+      handle.addEventListener("pointercancel", stop);
+      e.preventDefault();
+    });
+  }
+
+  drag(grip, function (dx, dy, w0, h0) {
+    if (zoomed || mini) return;
+    fw = w0 + dx;
+    fh = h0 + dy;
+  });
+
+  drag(titlebar, function (dx, dy, w0, h0, x0, y0) {
+    if (zoomed) return;
+    tx = x0 + dx;
+    ty = y0 + dy;
+  }, function (e) { return !!e.target.closest(".lights"); });
+
+  function toggleZoom() { zoomed = !zoomed; if (zoomed) mini = false; paint(); }
+
+  document.getElementById("btnZoom").addEventListener("click", toggleZoom);
+  titlebar.addEventListener("dblclick", function (e) {
+    if (e.target.closest(".lights")) return;
+    toggleZoom();
+  });
+
+  document.getElementById("btnMin").addEventListener("click", function () {
+    mini = !mini;
+    if (mini) zoomed = false;
+    paint();
+  });
+
+  document.getElementById("btnClose").addEventListener("click", function () {
+    document.body.classList.add("closed-mode");
+    document.getElementById("closedText").textContent = L("[Process completed]", "[进程已结束]");
+    document.getElementById("reopen").textContent = L("Reopen", "重新打开");
+  });
+
+  document.getElementById("reopen").addEventListener("click", function () {
+    document.body.classList.remove("closed-mode");
+    paint();
+    input.focus();
+  });
 
   var past = [];
   var cursor = -1;
