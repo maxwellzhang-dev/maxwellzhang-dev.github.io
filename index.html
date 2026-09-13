@@ -162,19 +162,26 @@
   .window.mini .screen { display: none; }
   .shell.mini { flex: none; margin-bottom: auto; }
 
-  /* ---- resize grip ---- */
+  /* ---- resize handles: eight, like a real window ---- */
   .window { position: relative; }
-  .grip {
-    position: absolute; right: 0; bottom: 0;
-    width: 18px; height: 18px;
-    cursor: nwse-resize; touch-action: none;
+  .rz { position: absolute; touch-action: none; z-index: 3; }
+  .rz-n  { top: 0; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+  .rz-s  { bottom: 0; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+  .rz-w  { left: 0; top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+  .rz-e  { right: 0; top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+  .rz-nw { top: 0; left: 0; width: 12px; height: 12px; cursor: nwse-resize; z-index: 4; }
+  .rz-ne { top: 0; right: 0; width: 12px; height: 12px; cursor: nesw-resize; z-index: 4; }
+  .rz-sw { bottom: 0; left: 0; width: 12px; height: 12px; cursor: nesw-resize; z-index: 4; }
+  .rz-se {
+    bottom: 0; right: 0; width: 18px; height: 18px; cursor: nwse-resize; z-index: 4;
     background:
       linear-gradient(135deg, transparent 0 44%, var(--dimmer) 44% 52%, transparent 52% 66%,
                       var(--dimmer) 66% 74%, transparent 74%);
     opacity: .55;
   }
-  .grip:hover { opacity: 1; }
-  .shell.zoomed .grip, .window.mini .grip { display: none; }
+  .rz-se:hover { opacity: 1; }
+  .shell.zoomed .rz, .window.mini .rz { display: none; }
+  .window.mini .rz-w, .window.mini .rz-e { display: none; }
 
   /* ---- closed state ---- */
   .closed {
@@ -309,6 +316,9 @@
     color: var(--dim); overflow-x: auto;
   }
 
+  .helpgrid dt { color: var(--dim); }
+  .helpgrid dd { line-height: 1.9; }
+
   /* ---- pipeline + history output ---- */
   .pipeout { display: flex; flex-direction: column; gap: 1px; }
   .pipeout div { color: var(--fg); }
@@ -388,7 +398,14 @@
              spellcheck="false" aria-label="Terminal command input">
     </div>
 
-    <div class="grip" id="grip" role="separator" aria-label="Resize window"></div>
+    <div class="rz rz-n"  data-rz="n"  role="separator" aria-label="Resize window"></div>
+    <div class="rz rz-s"  data-rz="s"  aria-hidden="true"></div>
+    <div class="rz rz-w"  data-rz="w"  aria-hidden="true"></div>
+    <div class="rz rz-e"  data-rz="e"  aria-hidden="true"></div>
+    <div class="rz rz-nw" data-rz="nw" aria-hidden="true"></div>
+    <div class="rz rz-ne" data-rz="ne" aria-hidden="true"></div>
+    <div class="rz rz-sw" data-rz="sw" aria-hidden="true"></div>
+    <div class="rz rz-se" data-rz="se" id="grip" aria-hidden="true"></div>
   </div>
 
   <div class="hints" id="hints"></div>
@@ -1172,47 +1189,32 @@
 
   /* ---------- help ---------- */
 
+  /* `help` lists what exists; `man` explains it. Keeping descriptions here as
+     well made the two commands do the same job, and meant a screenful of prose
+     that has to be translated twice. */
   CMD.help = function () {
-    return kv([
-      ["whoami",     '<span class="dim">' + L("the short version", "一句话版本") + "</span>"],
-      ["about",      '<span class="dim">' + L("the slightly longer version", "稍长一点的版本") + "</span>"],
-      ["experience", '<span class="dim">' + L("everything I have built, in full", "全部工作经历") + "</span>"],
-      ["education",  '<span class="dim">' + L("pharmacy, then computing", "药学，然后是计算机") + "</span>"],
-      ["skills",     '<span class="dim">' + L("tools I actually use", "真正在用的工具") + "</span>"],
-      ["projects",   '<span class="dim">' + L("what is public", "公开的部分") + "</span>"],
-      ["contact",    '<span class="dim">' + L("how to reach me", "怎么找到我") + "</span>"],
-      ["timeline",   '<span class="dim">' + L("the arc, drawn out", "职业轨迹") + "</span>"],
-      ["neofetch",   '<span class="dim">' + L("the obligatory one", "该有的那个") + "</span>"],
-      ["theme",      '<span class="dim">default · green · amber</span>'],
-      [L("zh", "en"), '<span class="dim">' + L("切换到中文", "switch to English") + "</span>"],
-      ["clear",      '<span class="dim">' + L("clear the screen", "清屏") + "</span>"]
-    ]) +
-    '<p class="dim" style="margin:12px 0 6px">' +
-      L("Everything above also lives in a directory tree you can walk:",
-        "上面的内容同时存在于一棵可以走的目录树里：") + "</p>" +
-    kv([
-      ["tree",              '<span class="dim">' + L("show the whole tree", "显示整棵目录树") + "</span>"],
-      ["ls [-l] [path]",    '<span class="dim">' + L("list a directory", "列出目录内容") + "</span>"],
-      ["cd &lt;path&gt;",   '<span class="dim">' + L("change directory", "切换目录") + "</span>"],
-      ["pwd",               '<span class="dim">' + L("where am I", "当前路径") + "</span>"],
-      ["cat &lt;file&gt;",  '<span class="dim">' + L("print a file", "打印文件内容") + "</span>"],
-      ["grep [-r] &lt;term&gt;", '<span class="dim">' + L("search, recursively with -r", "搜索，-r 递归") + "</span>"]
-    ]) +
-    '<p class="dim" style="margin:12px 0 6px">' +
-      L("Output pipes into filters, and the usual keys work:",
-        "输出可以接管道，常用快捷键也都在：") + "</p>" +
-    kv([
-      ["… | grep &lt;term&gt;", '<span class="dim">' + L("keep matching lines (-v inverts)", "保留匹配的行（-v 取反）") + "</span>"],
-      ["… | head / tail [-n N]", '<span class="dim">' + L("first or last N lines", "前 N 行或后 N 行") + "</span>"],
-      ["… | sort / uniq / wc", '<span class="dim">' + L("sort, dedupe, count", "排序、去重、计数") + "</span>"],
-      ["history", '<span class="dim">' + L("what you have run", "你执行过的命令") + "</span>"],
-      ["man &lt;cmd&gt;", '<span class="dim">' + L("detail on any command", "任意命令的详细说明") + "</span>"],
-      ["Ctrl+L / Ctrl+C", '<span class="dim">' + L("clear screen / abort the line", "清屏 / 放弃当前行") + "</span>"],
-      ["Ctrl+A / Ctrl+E / Ctrl+U / Ctrl+W", '<span class="dim">' + L("line start / end / kill line / kill word", "行首 / 行尾 / 删整行 / 删一词") + "</span>"]
-    ]) +
-    '<p class="dim" style="margin:10px 0 0">' +
-      L("Tab completes paths, and lists the candidates when more than one fits. ↑ and ↓ walk the history. Try <span class=\"cmdref\">skills | grep RAG</span>.",
-        "Tab 补全路径；有多个候选时按 Tab 列出全部。↑ ↓ 翻历史命令。试试 <span class=\"cmdref\">skills | grep RAG</span>。") + "</p>";
+    function row(label, cmds) {
+      return "<dt>" + label + "</dt><dd>" +
+        cmds.map(function (c) { return '<span class="cmdref">' + c + "</span>"; }).join("&nbsp;&nbsp;") +
+        "</dd>";
+    }
+    return '<dl class="kv helpgrid">' +
+      row(L("profile", "简介"), ["whoami", "about", "experience", "education", "skills", "projects", "contact"]) +
+      row(L("extras", "其他"),  ["timeline", "neofetch", "theme"]) +
+      row(L("files", "文件"),   ["tree", "ls", "cd", "pwd", "cat", "grep"]) +
+      row(L("filters", "过滤器"), ["grep", "head", "tail", "sort", "uniq", "wc"]) +
+      row(L("shell", "终端"),   ["help", "man", "history", "clear", L("zh", "en")]) +
+      "</dl>" +
+      '<p class="dim" style="margin:10px 0 0">' +
+        "<span class=\"cmdref\">man &lt;command&gt;</span> " +
+        L("for detail &nbsp;·&nbsp; filters run after a pipe: <span class=\"cmdref\">skills | grep RAG</span>",
+          "看详细说明 &nbsp;·&nbsp; 过滤器接在管道后面：<span class=\"cmdref\">skills | grep RAG</span>") +
+      "</p>" +
+      '<p class="dim" style="margin:3px 0 0">' +
+        "<span class=\"cmdref\">Tab</span>&nbsp;&nbsp;<span class=\"cmdref\">↑ ↓</span>&nbsp;&nbsp;" +
+        "<span class=\"cmdref\">Ctrl+L</span>&nbsp;&nbsp;<span class=\"cmdref\">Ctrl+C</span>&nbsp;&nbsp;" +
+        "<span class=\"cmdref\">Ctrl+A/E/U/W</span>" +
+      "</p>";
   };
 
   CMD.sudo = function () {
@@ -1312,7 +1314,6 @@
   var shell    = document.querySelector(".shell");
   var win      = document.querySelector(".window");
   var titlebar = document.querySelector(".titlebar");
-  var grip     = document.getElementById("grip");
 
   var free = false, zoomed = false, mini = false;
   var fw = 0, fh = 0, tx = 0, ty = 0;
@@ -1320,15 +1321,15 @@
 
   function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
   function pad() { return parseFloat(getComputedStyle(document.body).paddingLeft) || 0; }
+  function maxW() { return window.innerWidth  - pad() * 2; }
+  function maxH() { return window.innerHeight - pad() * 2; }
 
   function clampFree() {
     if (!free || zoomed) return;
-    var maxW = window.innerWidth  - pad() * 2;
-    var maxH = window.innerHeight - pad() * 2;
-    fw = clamp(fw, MIN_W, Math.max(MIN_W, maxW));
-    fh = clamp(fh, MIN_H, Math.max(MIN_H, maxH));
-    tx = clamp(tx, -pad(), Math.max(0, maxW - fw + pad()));
-    ty = clamp(ty, -pad(), Math.max(0, maxH - fh + pad()));
+    fw = clamp(fw, MIN_W, Math.max(MIN_W, maxW()));
+    fh = clamp(fh, MIN_H, Math.max(MIN_H, maxH()));
+    tx = clamp(tx, -pad(), Math.max(0, maxW() - fw + pad()));
+    ty = clamp(ty, -pad(), Math.max(0, maxH() - fh + pad()));
     paint();
   }
 
@@ -1354,11 +1355,12 @@
     var r = shell.getBoundingClientRect();
     fw = Math.round(r.width);
     fh = Math.round(r.height);
-    tx = ty = 0;
+    tx = Math.round(r.left - pad());
+    ty = Math.round(r.top  - pad());
     free = true;
   }
 
-  function drag(handle, onMove, guard) {
+  function onDrag(handle, onMove, guard) {
     if (!handle) return;
     handle.addEventListener("pointerdown", function (e) {
       if (e.button !== 0) return;
@@ -1383,17 +1385,43 @@
     });
   }
 
-  drag(grip, function (dx, dy, w0, h0) {
-    if (zoomed || mini) return;
-    fw = w0 + dx;
-    fh = h0 + dy;
+  /* Each edge grows the window away from the edge you grabbed, and a north or
+     west drag moves the opposite corner rather than dragging the whole window,
+     which is what makes it feel like a window rather than a text box. */
+  var EDGES = {
+    n:  { w:  0, h: -1 },
+    s:  { w:  0, h:  1 },
+    w:  { w: -1, h:  0 },
+    e:  { w:  1, h:  0 },
+    nw: { w: -1, h: -1 },
+    ne: { w:  1, h: -1 },
+    sw: { w: -1, h:  1 },
+    se: { w:  1, h:  1 }
+  };
+
+  each(document.querySelectorAll(".rz"), function (h) {
+    var spec = EDGES[h.getAttribute("data-rz")];
+    onDrag(h, function (dx, dy, w0, h0, x0, y0) {
+      if (zoomed || mini) return;
+      if (spec.w) {
+        fw = clamp(w0 + spec.w * dx, MIN_W, maxW() + (spec.w < 0 ? x0 + pad() : 0));
+        tx = spec.w < 0 ? x0 + (w0 - fw) : x0;
+      }
+      if (spec.h) {
+        fh = clamp(h0 + spec.h * dy, MIN_H, maxH() + (spec.h < 0 ? y0 + pad() : 0));
+        ty = spec.h < 0 ? y0 + (h0 - fh) : y0;
+      }
+    });
   });
 
-  drag(titlebar, function (dx, dy, w0, h0, x0, y0) {
-    if (zoomed) return;
+  onDrag(titlebar, function (dx, dy, w0, h0, x0, y0) {
     tx = x0 + dx;
     ty = y0 + dy;
-  }, function (e) { return !!e.target.closest(".lights"); });
+  }, function (e) {
+    if (e.target.closest(".lights")) return true;
+    if (zoomed) { zoomed = false; paint(); }   // dragging a zoomed window restores it
+    return false;
+  });
 
   function toggleZoom() { zoomed = !zoomed; if (zoomed) mini = false; paint(); }
 
@@ -1421,7 +1449,7 @@
     input.focus();
   });
 
-  var past = [];
+  var past = [];  var past = [];
   var cursor = -1;
 
   function ps1() {

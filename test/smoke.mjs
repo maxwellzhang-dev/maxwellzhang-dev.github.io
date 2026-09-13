@@ -136,7 +136,7 @@ await t('zh experience',async () => (await type('experience')).includes('慢病�
 await t('zh grep',      async () => (await type('grep 评测')).includes('.md'));
 await t('zh bad cmd',   async () => (await type('nope')).includes('zsh:'));
 await t('zh alias',     async () => (await type('经历')).includes('新传媒'));
-await t('zh help',      async () => (await type('help')).includes('清屏'));
+await t('zh help',      async () => { const o = await type('help'); return o.includes('简介') && o.includes('neofetch') && !o.includes('稍长一点'); });
 await t('en back',      async () => { await type('en'); return /NANYANG/i.test(await type('education')); });
 
 // --- window chrome ---
@@ -146,14 +146,29 @@ await t('minimise', async () => { await p.locator('#btnMin').click(); await p.wa
 await t('restore',  async () => { await p.locator('#btnMin').click(); await p.waitForTimeout(150); return !(await p.locator('.window').evaluate(e => e.classList.contains('mini'))); });
 await t('close',    async () => { await p.locator('#btnClose').click(); await p.waitForTimeout(150); return await p.locator('body').evaluate(e => e.classList.contains('closed-mode')); });
 await t('reopen',   async () => { await p.locator('#reopen').click(); await p.waitForTimeout(150); return !(await p.locator('body').evaluate(e => e.classList.contains('closed-mode'))); });
-await t('grip drag',async () => {
-  const box = await p.locator('#grip').boundingBox();
-  const w0 = (await p.locator('.shell').boundingBox()).width;
-  await p.mouse.move(box.x + 9, box.y + 9); await p.mouse.down();
-  await p.mouse.move(box.x - 200, box.y - 100, { steps: 8 }); await p.mouse.up();
+const dragEdge = async (sel, dx, dy) => {
+  const b = await p.locator(sel).boundingBox();
+  await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await p.mouse.down();
+  await p.mouse.move(b.x + b.width / 2 + dx, b.y + b.height / 2 + dy, { steps: 8 });
+  await p.mouse.up();
   await p.waitForTimeout(200);
-  return (await p.locator('.shell').boundingBox()).width < w0 - 100;
+  return await p.locator('.shell').boundingBox();
+};
+await t('handles x8',  async () => (await p.locator('.rz').count()) === 8);
+await t('drag SE',     async () => { const a = await p.locator('.shell').boundingBox(); const b = await dragEdge('.rz-se', -220, -120); return b.width < a.width - 100 && b.height < a.height - 50; });
+await t('drag E',      async () => { const a = await p.locator('.shell').boundingBox(); const b = await dragEdge('.rz-e', 120, 0); return b.width > a.width + 60 && Math.abs(b.x - a.x) < 4; });
+await t('drag W keeps right edge', async () => {
+  const a = await p.locator('.shell').boundingBox();
+  const b = await dragEdge('.rz-w', 90, 0);
+  return b.width < a.width - 40 && Math.abs((b.x + b.width) - (a.x + a.width)) < 6;
 });
+await t('drag N keeps bottom', async () => {
+  const a = await p.locator('.shell').boundingBox();
+  const b = await dragEdge('.rz-n', 0, 70);
+  return b.height < a.height - 30 && Math.abs((b.y + b.height) - (a.y + a.height)) < 6;
+});
+await t('min size',    async () => { const b = await dragEdge('.rz-se', -3000, -3000); return b.width >= 330 && b.height >= 210; });
 
 // --- selection is copyable ---
 await t('selectable', async () => {
