@@ -69,6 +69,50 @@ await t('clear',       async () => {
   return (await p.locator('#history .block').count()) === 0;
 });
 
+// --- pipes ---
+await t('pipe grep',   async () => { const o = await type('skills | grep RAG'); return o.includes('RAG') && !o.includes('Redis'); });
+await t('pipe wc -l',  async () => /^\d+$/m.test((await type('skills | wc -l')).split('\n').pop().trim()));
+await t('pipe head',   async () => (await type('tree | head -n 3')).split('\n').length <= 5);
+await t('pipe chain',  async () => (await type('experience | grep Azure | wc -l')).trim().length > 0);
+await t('pipe sort',   async () => (await type('ls | sort -r')).includes('.md'));
+await t('pipe grep -v',async () => !(await type('skills | grep -v Python')).includes('Cypher, Git'));
+await t('bad filter',  async () => /not a filter|不是过滤器/.test(await type('skills | nope')));
+await t('filter alone',async () => /pipe|管道/.test(await type('wc')));
+
+// --- man / history / suggestions ---
+await t('man cmd',     async () => { const o = await type('man grep'); return /SYNOPSIS|用法/.test(o); });
+await t('man index',   async () => (await type('man')).includes('neofetch'));
+await t('man bad',     async () => /No manual|手册页/.test(await type('man zzz')));
+await t('history',     async () => (await type('history')).includes('man grep'));
+await t('did you mean',async () => /Did you mean|想输入/.test(await type('skils')));
+await t('no suggest',  async () => !/Did you mean|想输入/.test(await type('qqqqqqqq')));
+
+// --- readline keys ---
+await t('ctrl+c',      async () => {
+  await p.locator('#entry').fill('half typed');
+  await p.keyboard.press('Control+c'); await p.waitForTimeout(120);
+  return (await p.locator('#entry').inputValue()) === '' && (await all()).includes('^C');
+});
+await t('ctrl+l',      async () => {
+  await type('pwd');
+  await p.locator('#entry').focus();
+  await p.keyboard.press('Control+l'); await p.waitForTimeout(120);
+  return (await p.locator('#history .block').count()) === 0;
+});
+await t('ctrl+u',      async () => {
+  await p.locator('#entry').fill('abcdef'); await p.locator('#entry').focus();
+  await p.locator('#entry').evaluate(el => el.setSelectionRange(6, 6));
+  await p.keyboard.press('Control+u'); await p.waitForTimeout(80);
+  return (await p.locator('#entry').inputValue()) === '';
+});
+await t('ctrl+w',      async () => {
+  await p.locator('#entry').fill('cat one two'); await p.locator('#entry').focus();
+  await p.locator('#entry').evaluate(el => el.setSelectionRange(11, 11));
+  await p.keyboard.press('Control+w'); await p.waitForTimeout(80);
+  return (await p.locator('#entry').inputValue()) === 'cat one';
+});
+await p.locator('#entry').fill('');
+
 // --- completion ---
 const tab = async (v) => { await p.locator('#entry').fill(v); await p.keyboard.press('Tab'); await p.waitForTimeout(120); return await p.locator('#entry').inputValue(); };
 await t('tab unique',  async () => (await tab('neo')).trim() === 'neofetch');
@@ -93,7 +137,7 @@ await t('zh grep',      async () => (await type('grep 评测')).includes('.md'))
 await t('zh bad cmd',   async () => (await type('nope')).includes('zsh:'));
 await t('zh alias',     async () => (await type('经历')).includes('新传媒'));
 await t('zh help',      async () => (await type('help')).includes('清屏'));
-await t('en back',      async () => { await type('en'); return (await type('education')).includes('Nanyang'); });
+await t('en back',      async () => { await type('en'); return /NANYANG/i.test(await type('education')); });
 
 // --- window chrome ---
 await t('zoom',     async () => { await p.locator('#btnZoom').click(); await p.waitForTimeout(150); return await p.locator('.shell').evaluate(e => e.classList.contains('zoomed')); });

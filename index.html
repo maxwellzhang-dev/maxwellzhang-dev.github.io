@@ -309,6 +309,15 @@
     color: var(--dim); overflow-x: auto;
   }
 
+  /* ---- pipeline + history output ---- */
+  .pipeout { display: flex; flex-direction: column; gap: 1px; }
+  .pipeout div { color: var(--fg); }
+  .hist {
+    display: grid; grid-template-columns: max-content 1fr; gap: 1px 2ch;
+    font-variant-numeric: tabular-nums;
+  }
+  .hist .n { color: var(--dimmer); text-align: right; }
+
   /* ---- grep ---- */
   .gr { display: flex; flex-direction: column; gap: 2px; }
   .gr .fname { color: var(--key); }
@@ -856,15 +865,24 @@
 
   /* ---------- grep, walking the tree ---------- */
 
-  function fileLines(node, key) {
+  /* Any command's HTML output reduced to text lines. Nodes are removed as
+     they are consumed so nothing is counted twice, which matters once the
+     output can be piped into wc. */
+  function linesFromHtml(html) {
     var box = document.createElement("div");
-    box.innerHTML = node.render();
+    box.innerHTML = html;
     var out = [];
+
+    each(box.querySelectorAll("pre"), function (pre) {
+      pre.textContent.split("\n").forEach(function (l) { out.push(l); });
+      pre.parentNode.removeChild(pre);
+    });
     each(box.querySelectorAll("dl.kv"), function (dl) {
       var dts = dl.querySelectorAll("dt"), dds = dl.querySelectorAll("dd");
       for (var i = 0; i < dts.length; i++) {
         out.push(dts[i].textContent.trim() + ": " + (dds[i] ? dds[i].textContent.trim() : ""));
       }
+      dl.parentNode.removeChild(dl);
     });
     each(box.querySelectorAll(".entry"), function (e) {
       var h = e.querySelector("h2"), m = e.querySelector(".meta");
@@ -872,10 +890,31 @@
       each(e.querySelectorAll("li"), function (li) { out.push(li.textContent.trim()); });
       var tg = e.querySelectorAll(".tag");
       if (tg.length) out.push(Array.prototype.map.call(tg, function (t) { return t.textContent.trim(); }).join(", "));
+      e.parentNode.removeChild(e);
     });
-    each(box.children, function (c) { if (c.tagName === "P") out.push(c.textContent.trim()); });
-    return out.filter(Boolean).map(function (t) { return t.replace(/\s+/g, " "); });
+    each(box.querySelectorAll(".lsgrid"), function (g) {
+      each(g.children, function (c) { out.push(c.textContent.trim()); });
+      g.parentNode.removeChild(g);
+    });
+    each(box.querySelectorAll(".lslong"), function (g) {
+      var cells = [], i = 0;
+      each(g.children, function (c) {
+        cells.push(c.textContent.trim());
+        if (++i % 4 === 0) { out.push(cells.join("  ")); cells = []; }
+      });
+      if (cells.length) out.push(cells.join("  "));
+      g.parentNode.removeChild(g);
+    });
+    each(box.querySelectorAll(".gr"), function (g) {
+      each(g.children, function (c) { out.push(c.textContent.trim()); });
+      g.parentNode.removeChild(g);
+    });
+
+    box.textContent.split("\n").forEach(function (l) { out.push(l.trim()); });
+    return out.map(function (t) { return t.replace(/\s+/g, " ").trim(); }).filter(Boolean);
   }
+
+  function fileLines(node) { return linesFromHtml(node.render()); }
 
   function collect(node, prefix, recursive, acc) {
     for (var name in node.children) {
@@ -910,7 +949,7 @@
     var needle = term.toLowerCase();
     var hits = [];
     files.forEach(function (pair) {
-      fileLines(pair[1], pair[0]).forEach(function (line, i) {
+      fileLines(pair[1]).forEach(function (line, i) {
         if (line.toLowerCase().indexOf(needle) !== -1) hits.push([pair[0], i + 1, line]);
       });
     });
@@ -992,6 +1031,145 @@
       '<div class="dim">──────────────────</div>' + kv(rows) + "</div></div>";
   };
 
+  /* ---------- pipeline filters ----------
+     A filter takes text lines and returns text lines. The first stage of a
+     pipeline is an ordinary command; everything after it is one of these. */
+
+  function nOf(args, dflt) {
+    var i = args.indexOf("-n");
+    if (i !== -1 && args[i + 1]) return parseInt(args[i + 1], 10) || dflt;
+    var joined = args.join("");
+    var m = joined.match(/-(\d+)/);
+    return m ? parseInt(m[1], 10) : dflt;
+  }
+
+  var FILTERS = {
+    grep: function (lines, args) {
+      var invert = args.some(function (a) { return a.charAt(0) === "-" && a.indexOf("v") !== -1; });
+      var term = args.filter(function (a) { return a.charAt(0) !== "-"; }).join(" ").toLowerCase();
+      if (!term) return lines;
+      return lines.filter(function (l) {
+        var hit = l.toLowerCase().indexOf(term) !== -1;
+        return invert ? !hit : hit;
+      });
+    },
+    head: function (lines, args) { return lines.slice(0, nOf(args, 10)); },
+    tail: function (lines, args) { return lines.slice(-nOf(args, 10)); },
+    sort: function (lines, args) {
+      var r = lines.slice().sort();
+      return args.some(function (a) { return a.indexOf("r") !== -1 && a.charAt(0) === "-"; }) ? r.reverse() : r;
+    },
+    uniq: function (lines) {
+      return lines.filter(function (l, i) { return i === 0 || l !== lines[i - 1]; });
+    },
+    wc: function (lines, args) {
+      if (args.some(function (a) { return a.indexOf("l") !== -1 && a.charAt(0) === "-"; })) return [String(lines.length)];
+      var words = 0, chars = 0;
+      lines.forEach(function (l) { words += l.split(/\s+/).filter(Boolean).length; chars += l.length; });
+      return [lines.length + "  " + words + "  " + chars];
+    }
+  };
+
+  function renderLines(lines) {
+    if (!lines.length) return '<span class="dim">' + L("(no output)", "（无输出）") + "</span>";
+    return '<div class="pipeout">' + lines.map(function (l) {
+      return "<div>" + esc(l) + "</div>";
+    }).join("") + "</div>";
+  }
+
+  function pipeHint(name) {
+    return '<span class="dim">' + name + ": " +
+      L("reads from a pipe — try ", "从管道读取 —— 试试 ") +
+      '<span class="cmdref">skills | ' + name + "</span></span>";
+  }
+
+  /* ---------- man ---------- */
+
+  function manPages() {
+    return {
+      ls:         ["ls [-l] [path]",        L("List a directory. -l shows permissions, size and date.", "列出目录内容。-l 显示权限、大小和日期。")],
+      cd:         ["cd [path]",             L("Change directory. Accepts ~, .. and relative paths.", "切换目录。支持 ~、.. 和相对路径。")],
+      pwd:        ["pwd",                   L("Print the working directory.", "打印当前路径。")],
+      cat:        ["cat <file>...",         L("Print one or more files.", "打印一个或多个文件。")],
+      tree:       ["tree [path]",           L("Draw the directory tree.", "画出目录树。")],
+      grep:       ["grep [-r] <term> [path]", L("Search file contents. -r walks subdirectories. Also works as a filter after a pipe.", "搜索文件内容。-r 递归子目录。也可用作管道过滤器。")],
+      head:       ["… | head [-n N]",       L("First N lines, 10 by default.", "前 N 行，默认 10。")],
+      tail:       ["… | tail [-n N]",       L("Last N lines, 10 by default.", "后 N 行，默认 10。")],
+      sort:       ["… | sort [-r]",         L("Sort lines. -r reverses.", "对行排序。-r 反向。")],
+      uniq:       ["… | uniq",              L("Drop adjacent duplicate lines. Pair it with sort.", "去掉相邻重复行。通常和 sort 连用。")],
+      wc:         ["… | wc [-l]",           L("Count lines, words and characters. -l counts lines only.", "统计行数、词数、字符数。-l 只数行。")],
+      history:    ["history",               L("List the commands run this session.", "列出本次会话执行过的命令。")],
+      theme:      ["theme [name]",          L("Switch phosphor: default, green or amber. Remembered in this browser.", "切换磷光配色：default、green、amber。记在本浏览器。")],
+      man:        ["man <command>",         L("What you are reading.", "你正在读的东西。")],
+      clear:      ["clear",                 L("Clear the screen. Ctrl+L does the same.", "清屏。Ctrl+L 同效。")],
+      whoami:     ["whoami",                L("Name and one line.", "姓名和一句话。")],
+      about:      ["about",                 L("The longer introduction. Same as cat about.txt.", "稍长的自我介绍。等同于 cat about.txt。")],
+      experience: ["experience",            L("Every role in full. Same content as the experience/ tree.", "完整工作经历。与 experience/ 目录内容相同。")],
+      education:  ["education",             L("Degrees and coursework.", "学历与课程。")],
+      skills:     ["skills",                L("Tools and frameworks.", "工具与框架。")],
+      projects:   ["projects",              L("What is public.", "公开的项目。")],
+      contact:    ["contact",               L("Email, LinkedIn, GitHub.", "邮箱、领英、GitHub。")],
+      timeline:   ["timeline",              L("The career arc as ASCII.", "职业轨迹图。")],
+      neofetch:   ["neofetch",              L("The obligatory one.", "该有的那个。")],
+      zh:         ["zh",                    L("Switch the page to Chinese.", "把页面切换到中文。")],
+      en:         ["en",                    L("Switch the page to English.", "把页面切换到英文。")]
+    };
+  }
+
+  function cmdMan(args) {
+    var pages = manPages();
+    var name = (args[0] || "").toLowerCase();
+    if (ALIASES[name]) name = ALIASES[name];
+    if (!name) {
+      return '<span class="dim">' + L("usage: man &lt;command&gt;", "用法：man &lt;命令&gt;") + "</span>" +
+        '<div class="lsgrid" style="margin-top:6px">' +
+        Object.keys(pages).sort().map(function (k) { return '<span class="cmdref">' + k + "</span>"; }).join("") +
+        "</div>";
+    }
+    var pg = pages[name];
+    if (!pg) return '<span class="err">' + L("No manual entry for ", "没有该命令的手册页： ") + esc(name) + "</span>";
+    return kv([
+      [L("NAME", "名称"), '<span class="accent">' + name + "</span>"],
+      [L("SYNOPSIS", "用法"), esc(pg[0])],
+      [L("DESCRIPTION", "说明"), pg[1]]
+    ]);
+  }
+
+  /* ---------- history ---------- */
+
+  function cmdHistory() {
+    if (!past.length) return '<span class="dim">' + L("(nothing yet)", "（还没有）") + "</span>";
+    return '<div class="hist">' + past.map(function (c, i) {
+      return '<span class="n">' + (i + 1) + "</span><span>" + esc(c) + "</span>";
+    }).join("") + "</div>";
+  }
+
+  /* ---------- did you mean ---------- */
+
+  function editDistance(a, b) {
+    var m = a.length, n = b.length, prev = [], cur = [], i, j;
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+      cur[0] = i;
+      for (j = 1; j <= n; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
+                          prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+      }
+      prev = cur.slice();
+    }
+    return prev[n];
+  }
+
+  function didYouMean(word) {
+    var best = null, bestD = 99;
+    NAMES.concat(Object.keys(ALIASES)).forEach(function (n) {
+      var dd = editDistance(word, n);
+      if (dd < bestD) { bestD = dd; best = n; }
+    });
+    var limit = word.length <= 4 ? 1 : 2;
+    return bestD <= limit ? best : null;
+  }
+
   /* ---------- help ---------- */
 
   CMD.help = function () {
@@ -1020,9 +1198,21 @@
       ["cat &lt;file&gt;",  '<span class="dim">' + L("print a file", "打印文件内容") + "</span>"],
       ["grep [-r] &lt;term&gt;", '<span class="dim">' + L("search, recursively with -r", "搜索，-r 递归") + "</span>"]
     ]) +
+    '<p class="dim" style="margin:12px 0 6px">' +
+      L("Output pipes into filters, and the usual keys work:",
+        "输出可以接管道，常用快捷键也都在：") + "</p>" +
+    kv([
+      ["… | grep &lt;term&gt;", '<span class="dim">' + L("keep matching lines (-v inverts)", "保留匹配的行（-v 取反）") + "</span>"],
+      ["… | head / tail [-n N]", '<span class="dim">' + L("first or last N lines", "前 N 行或后 N 行") + "</span>"],
+      ["… | sort / uniq / wc", '<span class="dim">' + L("sort, dedupe, count", "排序、去重、计数") + "</span>"],
+      ["history", '<span class="dim">' + L("what you have run", "你执行过的命令") + "</span>"],
+      ["man &lt;cmd&gt;", '<span class="dim">' + L("detail on any command", "任意命令的详细说明") + "</span>"],
+      ["Ctrl+L / Ctrl+C", '<span class="dim">' + L("clear screen / abort the line", "清屏 / 放弃当前行") + "</span>"],
+      ["Ctrl+A / Ctrl+E / Ctrl+U / Ctrl+W", '<span class="dim">' + L("line start / end / kill line / kill word", "行首 / 行尾 / 删整行 / 删一词") + "</span>"]
+    ]) +
     '<p class="dim" style="margin:10px 0 0">' +
-      L("Tab completes paths, and lists the candidates when more than one fits. ↑ and ↓ walk the history.",
-        "Tab 补全路径；有多个候选时按 Tab 列出全部。↑ ↓ 翻历史命令。") + "</p>";
+      L("Tab completes paths, and lists the candidates when more than one fits. ↑ and ↓ walk the history. Try <span class=\"cmdref\">skills | grep RAG</span>.",
+        "Tab 补全路径；有多个候选时按 Tab 列出全部。↑ ↓ 翻历史命令。试试 <span class=\"cmdref\">skills | grep RAG</span>。") + "</p>";
   };
 
   CMD.sudo = function () {
@@ -1059,8 +1249,8 @@
   /* ---------- shell ---------- */
 
   var ALIASES = {
-    cv: "experience", resume: "experience", work: "experience", man: "help", "?": "help",
-    dir: "ls", ll: "ls",
+    cv: "experience", resume: "experience", work: "experience", "?": "help",
+    dir: "ls", ll: "ls", "历史": "history",
     "关于": "about", "经历": "experience", "教育": "education", "技能": "skills",
     "项目": "projects", "联系": "contact", "帮助": "help", "时间线": "timeline",
     cn: "zh", "中文": "zh", english: "en"
@@ -1069,8 +1259,9 @@
   var PATH_CMDS = { ls: 1, cd: 1, cat: 1, tree: 1, grep: 1 };
 
   var NAMES = ["about", "cat", "cd", "clear", "contact", "education", "en", "experience",
-               "grep", "help", "ls", "neofetch", "projects", "pwd", "skills", "theme",
-               "timeline", "tree", "vim", "whoami", "zh"];
+               "grep", "head", "help", "history", "ls", "man", "neofetch", "projects",
+               "pwd", "skills", "sort", "tail", "theme", "timeline", "tree", "uniq",
+               "vim", "wc", "whoami", "zh"];
 
   var screen  = document.getElementById("screen");
   var history = document.getElementById("history");
@@ -1252,29 +1443,46 @@
     history.appendChild(block);
   }
 
-  function resolve(raw) {
-    var cmd = raw.trim();
-    if (!cmd) return null;
-
-    var parts = cmd.split(/\s+/);
+  function resolveOne(cmd) {
+    var parts = cmd.split(/\s+/).filter(Boolean);
+    if (!parts.length) return null;
     var head = parts[0].toLowerCase();
     var args = parts.slice(1);
 
     if (ALIASES[head]) head = ALIASES[head];
 
     switch (head) {
-      case "ls":   return cmdLs(args);
-      case "cd":   return cmdCd(args);
-      case "pwd":  return cmdPwd();
-      case "cat":  return cmdCat(args);
-      case "tree": return cmdTree(args);
-      case "grep": return cmdGrep(args);
-      case "theme": return theme(args.join(" ").trim().toLowerCase());
-      case "sudo": return CMD.sudo();
+      case "ls":      return cmdLs(args);
+      case "cd":      return cmdCd(args);
+      case "pwd":     return cmdPwd();
+      case "cat":     return cmdCat(args);
+      case "tree":    return cmdTree(args);
+      case "grep":    return cmdGrep(args);
+      case "man":     return cmdMan(args);
+      case "history": return cmdHistory();
+      case "theme":   return theme(args.join(" ").trim().toLowerCase());
+      case "sudo":    return CMD.sudo();
     }
 
-    if (head === "zh" || head === "en") {
-      LANG = head;
+    if (FILTERS[head]) return pipeHint(head);
+    if (CMD[head]) return CMD[head]();
+
+    var guess = didYouMean(head);
+    return '<span class="err">zsh: ' + L("command not found: ", "未找到命令： ") + esc(parts[0]) + "</span>" +
+      (guess
+        ? '<div class="dim">' + L("Did you mean ", "你是不是想输入 ") + '<span class="cmdref">' + guess + "</span>" + L("?", "？") + "</div>"
+        : '<div class="dim">' + L("Type ", "输入 ") + '<span class="cmdref">help</span>' + L(" to see what is here.", " 看看有什么。") + "</div>");
+  }
+
+  function resolve(raw) {
+    var cmd = raw.trim();
+    if (!cmd) return null;
+
+    var head0 = cmd.split(/\s+/)[0].toLowerCase();
+    if (ALIASES[head0]) head0 = ALIASES[head0];
+
+    if (head0 === "zh" || head0 === "en") {
+      LANG = head0;
       store("lang", LANG);
       buildFS();
       CWD = [];
@@ -1282,11 +1490,24 @@
       return null;
     }
 
-    if (CMD[head]) return CMD[head]();
+    if (cmd.indexOf("|") === -1) return resolveOne(cmd);
 
-    return '<span class="err">zsh: ' + L("command not found: ", "未找到命令： ") + esc(cmd) + "</span>" +
-           '<div class="dim">' + L("Type ", "输入 ") + '<span class="cmdref">help</span>' +
-           L(" to see what is here.", " 看看有什么。") + "</div>";
+    /* A pipeline: the first stage is a real command, the rest are filters. */
+    var stages = cmd.split("|").map(function (x) { return x.trim(); }).filter(Boolean);
+    var lines = linesFromHtml(resolveOne(stages[0]) || "");
+
+    for (var i = 1; i < stages.length; i++) {
+      var bits = stages[i].split(/\s+/).filter(Boolean);
+      var name = (bits[0] || "").toLowerCase();
+      var fn = FILTERS[name];
+      if (!fn) {
+        return '<span class="err">' + esc(name || "|") + ": " +
+               L("not a filter. Try grep, head, tail, sort, uniq or wc.",
+                 "不是过滤器。可用：grep、head、tail、sort、uniq、wc。") + "</span>";
+      }
+      lines = fn(lines, bits.slice(1));
+    }
+    return renderLines(lines);
   }
 
   function run(raw) {
@@ -1305,6 +1526,14 @@
     block.innerHTML =
       '<div class="cmdline">' + prompt + '<span class="typed">' + esc(cmd) + "</span></div>" +
       (out ? '<div class="out">' + out + "</div>" : "");
+    history.appendChild(block);
+  }
+
+  function echoAbort(text) {
+    var block = document.createElement("div");
+    block.className = "block";
+    block.innerHTML = '<div class="cmdline">' + ps1() +
+      '<span class="typed">' + esc(text) + '</span><span class="dim">^C</span></div>';
     history.appendChild(block);
   }
 
@@ -1437,7 +1666,40 @@
 
   input.addEventListener("input", sync);
 
+  /* readline keys. macOS routes Ctrl+A/E/K/U to the input itself, but the rest
+     are ours, and Ctrl+L / Ctrl+C are the two people actually reach for. */
   input.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && !e.metaKey && !e.altKey) {
+      var k = e.key.toLowerCase();
+      var v = input.value, a = input.selectionStart, b = input.selectionEnd;
+
+      if (k === "l") { e.preventDefault(); history.innerHTML = ""; toBottom(); return; }
+      if (k === "c") {
+        e.preventDefault();
+        echoAbort(v);
+        input.value = ""; sync(); toBottom();
+        cursor = past.length;
+        return;
+      }
+      if (k === "d") {
+        e.preventDefault();
+        if (!v) document.getElementById("btnClose").click();
+        return;
+      }
+      if (k === "u") { e.preventDefault(); input.value = v.slice(b); input.setSelectionRange(0, 0); sync(); return; }
+      if (k === "k") { e.preventDefault(); input.value = v.slice(0, a); input.setSelectionRange(a, a); sync(); return; }
+      if (k === "a") { e.preventDefault(); input.setSelectionRange(0, 0); return; }
+      if (k === "e") { e.preventDefault(); input.setSelectionRange(v.length, v.length); return; }
+      if (k === "w") {
+        e.preventDefault();
+        var left = v.slice(0, a).replace(/\s*\S+\s*$/, "");
+        input.value = left + v.slice(b);
+        input.setSelectionRange(left.length, left.length);
+        sync();
+        return;
+      }
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       run(input.value);
