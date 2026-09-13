@@ -200,6 +200,10 @@ const merr = [];
 m.on('pageerror', e => merr.push(e.message));
 await m.goto(file); await m.waitForTimeout(500);
 await t('mobile boots',  async () => (await m.locator('#history .block').count()) >= 3);
+await t('mobile fits',   async () => await m.evaluate(() => document.body.getBoundingClientRect().height <= window.innerHeight + 1));
+await t('chips on screen',async () => await m.locator('.hints').evaluate(e => e.getBoundingClientRect().bottom <= window.innerHeight + 1));
+await t('screen scrolls',async () => await m.locator('.screen').evaluate(e => e.scrollHeight > e.clientHeight));
+await t('no page scroll',async () => await m.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1));
 await t('no h-scroll',   async () => await m.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 await t('mobile no err', async () => merr.length === 0);
 
