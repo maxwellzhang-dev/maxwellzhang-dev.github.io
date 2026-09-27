@@ -590,17 +590,17 @@
   CMD.about = function () {
     return kv([
       [L("role", "身份"), "AI Engineer"],
-      [L("now", "现在"), L('AI Engineer Intern @ Mediacorp <span class="dim">— Singapore</span>',
-                           '新传媒 (Mediacorp) AI Engineer 实习 <span class="dim">— 新加坡</span>')],
-      [L("studying", "在读"), L('M.Comp in Applied AI, Nanyang Technological University <span class="dim">— graduating Jul 2027</span>',
-                                'Nanyang Technological University 南洋理工大学，计算机硕士（应用人工智能方向）<span class="dim">— 2027 年 7 月毕业</span>')],
+      [L("now", "在读"), L('M.Comp in Applied AI, Nanyang Technological University <span class="dim">— graduating Jul 2027</span>',
+                           'Nanyang Technological University 南洋理工大学，计算机硕士（应用人工智能方向）<span class="dim">— 2027 年 7 月毕业</span>')],
+      [L("previously", "之前"), L('AI Engineer Intern @ Mediacorp <span class="dim">— Singapore, Apr – Sep 2026</span>',
+                                  '新传媒 (Mediacorp) AI Engineer 实习 <span class="dim">— 新加坡，2026 年 4 月 – 9 月</span>')],
       [L("before", "此前"), L('four years in product management, then the pivot<span class="sub">BSc Chinese Pharmacy, Nanjing Agricultural University</span>',
                               '四年产品经理，然后转向 AI<span class="sub">Nanjing Agricultural University 南京农业大学，中药学 本科</span>')],
       [L("builds", "在做"), L("agents, RAG, post-training, evaluation", "agent、RAG、post-training、评测")],
       [L("believes", "相信"), L('<span class="accent">“There are no solutions, there are only trade-offs; and you try to get the best trade-off you can get, that’s all you can hope for.”</span><span class="sub">— Thomas Sowell</span>',
                                 '<span class="accent">「没有完美的解法，只有权衡与取舍；你只能设法争取到最好的取舍结果，这就是你所能期望的全部了。」</span><span class="sub">— Thomas Sowell</span>')],
-      [L("available", "可加入"), L('full-time from Jul 2027<span class="sub">internships from Oct 2026</span>',
-                                   '2027 年 7 月起可全职<span class="sub">实习自 2026 年 10 月起</span>')],
+      [L("available", "可加入"), L('full-time from Jul 2027<span class="sub">full-time internships from Nov 2026</span>',
+                                   '2027 年 7 月起可全职<span class="sub">2026 年 11 月起可全职实习</span>')],
       [L("status", "状态"), '<span class="ok">' + L("open to opportunities", "开放机会中") + "</span>"]
     ]);
   };
@@ -644,11 +644,27 @@
          L("Mandarin (native)", "中文（母语）")]);
   };
 
-  CMD.projects = function () {
+  var PRB = "https://github.com/maxwellzhang-dev/project-reporting-builder";
+  var PRB_LIVE = "https://ca-reporting-builder.kindbush-e2227a04.koreacentral.azurecontainerapps.io";
+
+  function projectReporting() {
+    return entry("project-reporting-builder", L("Python · public · live on Azure", "Python · 公开 · 已部署在 Azure"), [
+      L('Turns project notes, metrics and images into shareable report cards. An Azure OpenAI model drafts cards from pasted notes or an image, and any figure it reads off the page has to be confirmed before it is used.',
+        '把项目笔记、指标和图片整理成可分享的汇报卡片。Azure OpenAI 模型可以从粘贴的笔记或图片起草卡片，从页面里读出的数字必须经人确认后才会使用。'),
+      L('FastAPI and plain ES modules with no build step; unit, integration and Playwright browser tests with axe accessibility checks; CI; a hardened container on Azure Container Apps. <a href="' + PRB + '" target="_blank" rel="noopener">code</a> · <a href="' + PRB_LIVE + '" target="_blank" rel="noopener">live demo</a>',
+        'FastAPI 加原生 ES 模块，无构建步骤；单元、集成和 Playwright 浏览器测试，含 axe 无障碍检查；CI；加固后的容器部署在 Azure Container Apps。<a href="' + PRB + '" target="_blank" rel="noopener">代码</a> · <a href="' + PRB_LIVE + '" target="_blank" rel="noopener">在线演示</a>')
+    ]);
+  }
+
+  function projectMedical() {
     return entry("medical-agent-prototype", L("TypeScript · public", "TypeScript · 公开"), [
       L('An independent reimplementation of the clinical-agent architecture: intake, memory, and a rules-before-model safety layer. <a href="' + GH + '" target="_blank" rel="noopener">github.com/maxwellzhang-dev</a>',
         '独立重写的临床 Agent 架构：问诊、记忆，以及「规则先于模型」的安全层。<a href="' + GH + '" target="_blank" rel="noopener">github.com/maxwellzhang-dev</a>')
-    ]) + '<p class="dim">' +
+    ]);
+  }
+
+  CMD.projects = function () {
+    return projectReporting() + projectMedical() + '<p class="dim">' +
       L("Most of the rest is employer work and lives behind an NDA. Ask me about it — the architecture travels even when the code does not.",
         "其余多为雇主项目，受保密约定限制。架构可以聊，代码不能给。") + "</p>";
   };
@@ -658,8 +674,8 @@
       [L("email", "邮箱"), '<a href="mailto:' + MAIL + '">' + MAIL + "</a>"],
       [L("linkedin", "领英"), '<a href="' + LI + '" target="_blank" rel="noopener">dingpu-z</a>'],
       ["github", '<a href="' + GH + '" target="_blank" rel="noopener">maxwellzhang-dev</a>'],
-      [L("based in", "所在地"), L('Singapore <span class="dim">— open to Shanghai, Shenzhen, Beijing</span>',
-                                  '新加坡 <span class="dim">— 可去上海、深圳、北京</span>')],
+      [L("based in", "所在地"), L('Singapore <span class="dim">— also open to Hong Kong and mainland China</span>',
+                                  '新加坡 <span class="dim">— 也可去香港、中国大陆</span>')],
       [L("languages", "语言"), L("Mandarin (native) · English (fluent)", "中文（母语）· 英文（流利）")]
     ]);
   };
@@ -700,7 +716,8 @@
       "experience": d(exp),
       "education":  d(edu),
       "skills.md":  f(CMD.skills, "2026-09"),
-      "projects":   d({ "medical-agent-prototype.md": f(CMD.projects, "2026-08") }),
+      "projects":   d({ "project-reporting-builder.md": f(projectReporting, "2026-09"),
+                        "medical-agent-prototype.md": f(projectMedical, "2026-08") }),
       "contact.md": f(CMD.contact, "2026-09")
     });
     SIZES = {};
