@@ -194,6 +194,19 @@ await t('lang persists', async () => {
   const v = (await all()).includes('在读'); await type('en'); return v;
 });
 
+// --- first-visit language: ?lang= beats the saved choice, which beats the browser ---
+const firstVisit = async (opts, url) => {
+  const ctx = await b.newContext(opts); const q = await ctx.newPage();
+  await q.goto(url || file); await q.waitForTimeout(500);
+  const txt = await q.locator('#history').innerText(); const lang = await q.locator('html').getAttribute('lang');
+  await ctx.close(); return { zh: txt.includes('在读'), lang };
+};
+await t('zh browser',     async () => { const r = await firstVisit({ locale: 'zh-CN' }); return r.zh && r.lang === 'zh-CN'; });
+await t('zh-SG browser',  async () => (await firstVisit({ locale: 'zh-SG' })).zh);
+await t('en browser',     async () => { const r = await firstVisit({ locale: 'en-SG' }); return !r.zh && r.lang === 'en'; });
+await t('?lang=zh wins',  async () => (await firstVisit({ locale: 'en-US' }, file + '?lang=zh')).zh);
+await t('?lang=en wins',  async () => !(await firstVisit({ locale: 'zh-CN' }, file + '?lang=en')).zh);
+
 // --- narrow viewport ---
 const m = await b.newPage({ viewport: { width: 390, height: 780 } });
 const merr = [];
