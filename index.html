@@ -627,16 +627,15 @@
         ["OpenAI SDK", "LangChain", "LangGraph", "MCP",
          L("prompt engineering", "提示词工程"),
          L("automated prompt optimization (DSPy MIPROv2 / GEPA)", "自动化提示词优化 (DSPy MIPROv2 / GEPA)"),
-         "RAG", "GraphRAG",
-         L("embedding fine-tuning", "Embedding 微调"),
-         "FAISS / Milvus",
+         "RAG / GraphRAG",
+         L("hybrid graph-vector retrieval", "图-向量混合检索"),
          L("LLM-based entity/relation extraction", "基于 LLM 的实体/关系抽取"),
-         "Neo4j",
-         L("hybrid graph-vector retrieval", "图-向量混合检索")]) +
+         "FAISS / Milvus", "Neo4j",
+         L("embedding fine-tuning", "Embedding 微调")]) +
       tagged(L("Backend", "后端"),
         [L("FastAPI / Flask (REST APIs)", "FastAPI / Flask (REST API)"), "Redis"]) +
       tagged(L("Cloud", "云平台"),
-        ["Microsoft Foundry", "Azure OpenAI", "Azure Functions", "Azure AI Content Safety", "AWS"]) +
+        ["Azure", "AWS"]) +
       tagged(L("Product &amp; AI-Assisted Dev", "产品与 AI 辅助开发"),
         ["Codex", "Claude Code", "Jira", "Figma", "Axure RP", "Visio"]) +
       tagged(L("Language", "语言"),
@@ -1010,32 +1009,36 @@
 
   /* ---------- timeline ---------- */
 
+  // Each row: [year, title, [detail lines...]]. Branch glyphs and the vertical rule are
+  // drawn by CMD.timeline, so a row never carries its own box-drawing characters.
   var TL_EN = [
-    ["2017", "─┬─", "<u>BSc Chinese Pharmacy</u>", "Nanjing Agricultural University"],
-    ["2020", " ├─", "<u>undergraduate research assistant</u>", "compound–target–disease networks, Python"],
-    ["2021", " ├─", "<u>Shenzhen Perfect Information Technology</u>", "product manager → AI engineer"],
-    ["",     " │ ", "", "enterprise platforms, then a medical agent"],
-    ["2025", " ├─", "<u>M.Comp in Applied AI</u>", "Nanyang Technological University"],
-    ["2026", " ├─", "<u>Mediacorp · AI Products &amp; Solutions</u>", "compliance agent · dialect TTS · content generation"],
-    ["2027", " └─", "<u>graduating July</u>", "open to full-time roles"]
+    ["2017", "BSc Chinese Pharmacy", ["Nanjing Agricultural University"]],
+    ["2018", "student assistant", ["Outstanding Student Assistant award"]],
+    ["2020", "undergraduate research assistant", ["compound–target–disease networks, Python"]],
+    ["2021", "Shenzhen Perfect Information Technology", ["product manager → AI engineer", "enterprise platforms, then a medical agent"]],
+    ["2025", "M.Comp in Applied AI", ["Nanyang Technological University"]],
+    ["2026", "Mediacorp · AI Products &amp; Solutions", ["compliance agent · dialect TTS · content generation"]],
+    ["2027", "graduating July", ["open to full-time roles"]]
   ];
   var TL_ZH = [
-    ["2017", "─┬─", "<u>中药学 本科</u>", "Nanjing Agricultural University 南京农业大学"],
-    ["2020", " ├─", "<u>本科科研助理</u>", "化合物–靶点–疾病网络，Python"],
-    ["2021", " ├─", "<u>深圳普菲特信息科技</u>", "产品经理 → AI Engineer"],
-    ["",     " │ ", "", "企业内部平台，之后是慢病医疗 Agent"],
-    ["2025", " ├─", "<u>计算机硕士（应用人工智能）</u>", "Nanyang Technological University 南洋理工大学"],
-    ["2026", " ├─", "<u>新传媒 · AI Products &amp; Solutions</u>", "合规 Agent · 方言 TTS · 内容生成"],
-    ["2027", " └─", "<u>7 月毕业</u>", "开放全职机会"]
+    ["2017", "中药学 本科", ["Nanjing Agricultural University 南京农业大学"]],
+    ["2018", "学生助理", ["获评优秀学生助理"]],
+    ["2020", "本科科研助理", ["化合物–靶点–疾病网络，Python"]],
+    ["2021", "深圳普菲特信息科技", ["产品经理 → AI Engineer", "企业内部平台，之后是慢病医疗 Agent"]],
+    ["2025", "计算机硕士（应用人工智能）", ["Nanyang Technological University 南洋理工大学"]],
+    ["2026", "新传媒 · AI Products &amp; Solutions", ["合规 Agent · 方言 TTS · 内容生成"]],
+    ["2027", "7 月毕业", ["开放全职机会"]]
   ];
 
   CMD.timeline = function () {
     var rows = LANG === "zh" ? TL_ZH : TL_EN;
-    var out = rows.map(function (r) {
-      var year = r[0] ? "<b>" + r[0] + "</b>" : "    ";
-      var head = r[2] ? year + " " + r[1] + " " + r[2] : year + " " + r[1];
-      var sub  = r[3] ? "\n     " + r[1].replace(/[─┬├└]/g, " ").replace(/\s+$/, " │ ") + " <i>" + r[3] + "</i>" : "";
-      return head + sub;
+    var out = rows.map(function (r, i) {
+      var first = i === 0, last = i === rows.length - 1;
+      var glyph = first ? "┌─" : last ? "└─" : "├─";
+      var rail = last ? "  " : "│ ";
+      var head = "<b>" + r[0] + "</b> " + glyph + " <u>" + r[1] + "</u>";
+      var subs = r[2].map(function (d) { return "     " + rail + " <i>" + d + "</i>"; });
+      return [head].concat(subs).join("\n");
     }).join("\n");
     return '<pre class="tl">' + out + "</pre>";
   };
