@@ -159,9 +159,12 @@
   .shell.zoomed .window { border-radius: 0; border-width: 0 0 1px; }
   .shell.zoomed .hints { padding: 10px 14px; }
 
-  .window.mini { flex: none; }
-  .window.mini .screen { display: none; }
-  .shell.mini { flex: none; margin-bottom: auto; }
+  /* Minimised: the window has gone into the Dock, so it is not drawn at all.
+     visibility keeps its box, so restoring it does not reflow the page. */
+  .shell.mini, body.no-window .shell { visibility: hidden; pointer-events: none; }
+  /* Full screen, as on macOS: no Dock, and the yellow light is disabled. */
+  .shell.zoomed .light.y { background: #5b5e66; cursor: default; }
+  .shell.zoomed .lights:hover .light.y span { opacity: 0; }
 
   /* ---- resize handles: eight, like a real window ---- */
   .window { position: relative; }
@@ -183,6 +186,48 @@
   .rz-se:hover { opacity: 1; }
   .shell.zoomed .rz, .window.mini .rz { display: none; }
   .window.mini .rz-w, .window.mini .rz-e { display: none; }
+
+  /* ---- Dock ---- */
+  body { padding-bottom: calc(clamp(10px, 2.2vw, 28px) + 64px); }
+  body.zoomed { padding-bottom: 0; }
+  .dock {
+    position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%);
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 6px 10px 4px; border-radius: 16px;
+    background: rgba(40, 42, 50, .55); border: 1px solid rgba(255,255,255,.08);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.7);
+    z-index: 20;
+  }
+  body.zoomed .dock { display: none; }
+  .dock button {
+    -webkit-appearance: none; appearance: none; border: 0; padding: 0; margin: 0; position: relative;
+    background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .dock button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 10px; }
+  .dock-icon {
+    width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(180deg, #3a3d46, #1c1d22); border: 1px solid rgba(255,255,255,.12);
+    font: 600 15px/1 var(--mono); color: #e8e8e8; transition: transform .15s ease;
+  }
+  .dock button:hover .dock-icon, .dock button:hover .dock-thumb { transform: translateY(-4px) scale(1.06); }
+  .dock-dot { width: 4px; height: 4px; border-radius: 50%; background: #d9d9d9; }
+  .dock-sep { width: 1px; align-self: stretch; margin: 4px 2px 8px; background: rgba(255,255,255,.18); }
+  .dock-thumb {
+    width: 52px; height: 44px; border-radius: 6px; overflow: hidden; transition: transform .15s ease;
+    background: var(--bg-win); border: 1px solid rgba(255,255,255,.14);
+    display: flex; flex-direction: column;
+  }
+  .dock-thumb i { display: block; height: 9px; background: var(--bg-chrome); border-bottom: 1px solid var(--rule); }
+  .dock-thumb b { display: block; margin: 5px 5px 0; height: 3px; border-radius: 2px; background: var(--accent); opacity: .7; }
+  .dock-thumb b + b { width: 60%; background: var(--dim); opacity: .5; }
+  .dock-tip {
+    position: absolute; bottom: 62px; padding: 3px 8px; border-radius: 5px; white-space: nowrap;
+    font: 12px/1.4 var(--sans); color: #eee; background: rgba(30,31,36,.92); border: 1px solid rgba(255,255,255,.1);
+    opacity: 0; pointer-events: none; transition: opacity .12s ease;
+  }
+  .dock button:hover .dock-tip { opacity: 1; }
+  .dock [hidden] { display: none !important; }
 
   /* ---- closed state ---- */
   .closed {
@@ -416,15 +461,19 @@
   <div class="hints" id="hints"></div>
 </div>
 
-<div class="closed" id="closed">
-  <pre>  ┌────────────────┐
-  │                │
-  │                │
-  │                │
-  └────────────────┘</pre>
-  <div id="closedText">[Process completed]</div>
-  <button type="button" id="reopen">Reopen</button>
-</div>
+<nav class="dock" id="dock" aria-label="Dock">
+  <button type="button" id="dockApp" aria-label="Terminal">
+    <span class="dock-tip">Terminal</span>
+    <span class="dock-icon" aria-hidden="true">&gt;_</span>
+    <span class="dock-dot" aria-hidden="true"></span>
+  </button>
+  <span class="dock-sep" id="dockSep" hidden></span>
+  <button type="button" id="dockMini" hidden aria-label="dingpu@ntu">
+    <span class="dock-tip">dingpu@ntu</span>
+    <span class="dock-thumb" aria-hidden="true"><i></i><b></b><b></b></span>
+    <span class="dock-dot" style="visibility:hidden" aria-hidden="true"></span>
+  </button>
+</nav>
 
 <script>
 (function () {
@@ -1144,8 +1193,8 @@
       theme:      ["theme [name]",          L("Switch phosphor: default, green or amber. Remembered in this browser.", "切换磷光配色：default、green、amber。记在本浏览器。")],
       man:        ["man <command>",         L("What you are reading.", "你正在读的东西。")],
       keys:       ["man keys",
-                   L("Tab completes, twice lists. ↑ ↓ walk the history. Ctrl+L clears, Ctrl+C abandons the line, Ctrl+D closes the window, Ctrl+A/E jump to the start or end, Ctrl+U/K kill to it, Ctrl+W kills the previous word.",
-                     "Tab 补全，补不动时列出候选。↑ ↓ 翻历史。Ctrl+L 清屏，Ctrl+C 放弃当前行，Ctrl+D 关闭窗口，Ctrl+A/E 跳行首行尾，Ctrl+U/K 删到行首行尾，Ctrl+W 删前一个词。")],
+                   L("Tab completes, twice lists. ↑ ↓ walk the history. Ctrl+L clears, Ctrl+C abandons the line, Ctrl+D ends the session, Ctrl+A/E jump to the start or end, Ctrl+U/K kill to it, Ctrl+W kills the previous word.",
+                     "Tab 补全，补不动时列出候选。↑ ↓ 翻历史。Ctrl+L 清屏，Ctrl+C 放弃当前行，Ctrl+D 结束会话，Ctrl+A/E 跳行首行尾，Ctrl+U/K 删到行首行尾，Ctrl+W 删前一个词。")],
       pipes:      ["<command> | <filter>",
                    L("Feed any command's output into grep, head, tail, sort, uniq or wc. Example: skills | grep RAG",
                      "把任意命令的输出接给 grep、head、tail、sort、uniq 或 wc。例如：skills | grep RAG")],
@@ -1304,7 +1353,7 @@
     probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;top:0;left:0";
     probe.textContent = new Array(101).join("0");
     screen.appendChild(probe);
-    var cw = probe.getBoundingClientRect().width / 100;
+    var cw = probe.offsetWidth / 100;   // layout width: ignores the genie transform mid-animation
     screen.removeChild(probe);
 
     var cs = getComputedStyle(screen);
@@ -1440,7 +1489,7 @@
     tx = x0 + dx;
     ty = y0 + dy;
   }, function (e) {
-    if (e.target.closest(".lights")) return true;
+    if (e.target.closest(".lights") || mini) return true;
     if (zoomed) { zoomed = false; paint(); }   // dragging a zoomed window restores it
     return false;
   });
@@ -1453,25 +1502,90 @@
     toggleZoom();
   });
 
-  document.getElementById("btnMin").addEventListener("click", function () {
-    mini = !mini;
-    if (mini) zoomed = false;
-    paint();
-  });
+  /* ---------- macOS Terminal behaviour ----------
+     Yellow   : the window genies into the Dock; its thumbnail or the
+                Terminal icon brings it back.
+     Red      : the window closes but Terminal keeps running in the Dock;
+                clicking the icon opens a fresh window (a new session).
+     exit/^D  : the shell ends, the window stays and says [Process completed].
+     Green    : full screen, which hides the Dock and disables yellow. */
+  var dockApp = document.getElementById("dockApp");
+  var dockMini = document.getElementById("dockMini");
+  var dockSep = document.getElementById("dockSep");
+  var windowOpen = true, shellAlive = true;
 
-  document.getElementById("btnClose").addEventListener("click", function () {
-    document.body.classList.add("closed-mode");
-    document.getElementById("closedText").textContent = L("[Process completed]", "[进程已结束]");
-    document.getElementById("reopen").textContent = L("Reopen", "重新打开");
-  });
+  function dockTarget(el) {
+    var d = el.getBoundingClientRect(), r = shell.getBoundingClientRect();
+    return { dx: (d.left + d.width / 2) - (r.left + r.width / 2),
+             dy: (d.top + d.height / 2) - (r.top + r.height / 2),
+             s: Math.max(0.04, d.width / Math.max(1, r.width)) };
+  }
+  function genie(el, out, done) {
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!shell.animate || reduce) { done(); return; }
+    var base = shell.style.transform || "";
+    var t = dockTarget(el);
+    var far = base + " translate(" + t.dx + "px," + t.dy + "px) scale(" + t.s + ")";
+    var near = base || "none";
+    var a = shell.animate(out
+        ? [{ transform: near, opacity: 1 }, { transform: far, opacity: 0.2 }]
+        : [{ transform: far, opacity: 0.2 }, { transform: near, opacity: 1 }],
+      { duration: 320, easing: "cubic-bezier(.3,.7,.3,1)" });
+    a.onfinish = done;
+  }
+  function syncDock() { dockMini.hidden = dockSep.hidden = !mini; }
 
-  document.getElementById("reopen").addEventListener("click", function () {
-    document.body.classList.remove("closed-mode");
-    paint();
-    input.focus();
-  });
+  function minimise() {
+    if (mini || zoomed || !windowOpen) return;
+    dockMini.hidden = dockSep.hidden = false;
+    genie(dockMini, true, function () { mini = true; paint(); syncDock(); });
+  }
+  function restore() {
+    if (!mini) return;
+    mini = false; paint();
+    genie(dockMini, false, function () {
+      syncDock();
+      if (shellAlive) input.focus({ preventScroll: true });
+    });
+  }
+  function closeWindow() {
+    windowOpen = false; mini = false; zoomed = false;
+    document.body.classList.add("no-window");
+    paint(); syncDock();
+  }
+  function newWindow() {
+    windowOpen = true; shellAlive = true;
+    document.body.classList.remove("no-window");
+    live.style.display = "";
+    free = false; zoomed = false; mini = false;
+    paint(); syncDock();
+    boot(true);
+    genie(dockApp, false, function () {});
+    input.focus({ preventScroll: true });
+  }
+  function endShell() {
+    if (!shellAlive) return;
+    shellAlive = false;
+    var block = document.createElement("div");
+    block.className = "block dim";
+    block.textContent = "[Process completed]";
+    history.appendChild(block);
+    live.style.display = "none";
+    input.blur();
+    toBottom();
+  }
 
-  var past = [];  var past = [];
+  document.getElementById("btnMin").addEventListener("click", minimise);
+  document.getElementById("btnClose").addEventListener("click", closeWindow);
+  dockMini.addEventListener("click", restore);
+  dockApp.addEventListener("click", function () {
+    if (!windowOpen) newWindow();
+    else if (mini) restore();
+    else if (shellAlive) input.focus({ preventScroll: true });
+  });
+  CMD.exit = function () { setTimeout(endShell, 0); return ""; };
+
+  var past = [];
   var cursor = -1;
 
   function ps1() {
@@ -1734,7 +1848,7 @@
       }
       if (k === "d") {
         e.preventDefault();
-        if (!v) document.getElementById("btnClose").click();
+        if (!v) endShell();
         return;
       }
       if (k === "u") { e.preventDefault(); input.value = v.slice(b); input.setSelectionRange(0, 0); sync(); return; }
