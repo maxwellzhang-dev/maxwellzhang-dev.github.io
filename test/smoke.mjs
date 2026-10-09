@@ -131,12 +131,12 @@ await p.locator('#entry').fill('');
 
 // --- Chinese mode: run the same core set ---
 await type('zh');
-await t('zh switched',  async () => (await all()).includes('在读'));
+await t('zh switched',  async () => (await all()).includes('专注方向'));
 await t('zh tree',      async () => (await type('tree')).includes('experience'));
 await t('zh cat',       async () => (await type('cat skills.md')).includes('图-向量混合检索'));
 await t('zh education', async () => (await type('education')).includes('南京农业大学'));
 await t('zh experience',async () => (await type('experience')).includes('慢病管理'));
-await t('zh grep',      async () => (await type('grep 评测')).includes('.md'));
+await t('zh grep',      async () => (await type('grep 评估')).includes('.md'));
 await t('zh bad cmd',   async () => (await type('nope')).includes('zsh:'));
 await t('zh alias',     async () => (await type('经历')).includes('新传媒'));
 await t('zh help',      async () => { const o = await type('help'); return o.includes('neofetch') && !/\\bls\\b|\\bcd\\b|\\bpwd\\b|\\bhistory\\b/.test(o); });
@@ -191,7 +191,7 @@ await t('theme persists', async () => {
 });
 await t('lang persists', async () => {
   await type('zh'); await p.reload(); await p.waitForTimeout(500);
-  const v = (await all()).includes('在读'); await type('en'); return v;
+  const v = (await all()).includes('专注方向'); await type('en'); return v;
 });
 
 // --- first-visit language: ?lang= beats the saved choice, which beats the browser ---
@@ -199,7 +199,7 @@ const firstVisit = async (opts, url) => {
   const ctx = await b.newContext(opts); const q = await ctx.newPage();
   await q.goto(url || file); await q.waitForTimeout(500);
   const txt = await q.locator('#history').innerText(); const lang = await q.locator('html').getAttribute('lang');
-  await ctx.close(); return { zh: txt.includes('在读'), lang };
+  await ctx.close(); return { zh: txt.includes('专注方向'), lang };
 };
 await t('zh browser',     async () => { const r = await firstVisit({ locale: 'zh-CN' }); return r.zh && r.lang === 'zh-CN'; });
 await t('zh-SG browser',  async () => (await firstVisit({ locale: 'zh-SG' })).zh);
